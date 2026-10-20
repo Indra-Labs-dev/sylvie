@@ -2,3 +2,4 @@
 actions.log
 __pycache__/
 *.pyc
+.voice.*

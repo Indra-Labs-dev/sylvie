@@ -1,5 +1,5 @@
 """Voix via Termux:API : écoute (termux-speech-to-text) et parole (termux-tts-speak)."""
-import re, subprocess
+import os, re, subprocess, time
 
 _proc = None
 
@@ -10,6 +10,27 @@ def listen(timeout=30):
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return ""
     return r.stdout.strip()
+
+def record(path, limit=30):
+    """Enregistre le micro dans `path` (AAC/m4a) jusqu'à Entrée ou `limit` secondes."""
+    subprocess.run(["termux-microphone-record", "-q"], capture_output=True)  # coupe un éventuel enregistrement resté ouvert
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+    try:
+        r = subprocess.run(["termux-microphone-record", "-f", path, "-e", "aac", "-r", "16000", "-c", "1",
+                            "-l", str(limit)], capture_output=True, text=True, timeout=15)
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+    if r.returncode != 0:
+        return False
+    try:
+        input(f"Parle, puis appuie sur Entrée ({limit} s max)... ")
+    finally:
+        subprocess.run(["termux-microphone-record", "-q"], capture_output=True)
+    time.sleep(0.7)  # laisse le fichier se finaliser
+    return os.path.exists(path) and os.path.getsize(path) > 1000
 
 def clean(text):
     """Retire ce qui se lit mal à voix haute (markdown, liens)."""

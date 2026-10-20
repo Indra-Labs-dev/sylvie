@@ -31,7 +31,7 @@ Modèle par défaut : `gemini-3.6-flash`, avec repli sur `gemini-3.5-flash-lite`
 
 ## Voix
 
-- `v` : Sylvie t'écoute (reconnaissance vocale Android), puis traite ta phrase comme une saisie normale.
+- `v` : enregistre ta voix (Entrée pour terminer, 30 s max), Gemini la transcrit en français, puis Sylvie traite la phrase comme une saisie normale. L'enregistrement est supprimé juste après. `SYLVIE_STT=android` utilise à la place la reconnaissance vocale du système (qui suit la langue du téléphone).
 - `/voix` : active ou désactive la lecture des réponses à voix haute (`SYLVIE_SPEAK=1` pour l'activer au démarrage).
 - Une nouvelle saisie coupe la parole en cours.
 - Les confirmations d'actions restent **tactiles** (boîte de dialogue) : un ordre capté par le micro ne peut jamais valider une action.
