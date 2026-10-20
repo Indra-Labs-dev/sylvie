@@ -25,7 +25,7 @@ def generate(contents, system=None, tools=None, thinking=True):
         body["tools"] = tools
     if thinking and THINKING:
         body["generationConfig"] = {"thinkingConfig": {"thinkingLevel": THINKING}}
-    last = None
+    errors = {}
     for model in MODELS:
         for _ in range(2):
             t0 = time.time()
@@ -33,7 +33,7 @@ def generate(contents, system=None, tools=None, thinking=True):
                 r = HTTP.post(f"{BASE}{model}:generateContent", headers={"x-goog-api-key": _key()},
                               timeout=45, json=body)
             except requests.exceptions.RequestException as e:
-                last = f"{model}: {e.__class__.__name__}"
+                errors[model] = f"réseau ({e.__class__.__name__})"
                 continue
             if DEBUG:
                 print(f"\n[{model} {r.status_code} {time.time() - t0:.1f}s]")
@@ -47,13 +47,13 @@ def generate(contents, system=None, tools=None, thinking=True):
                 cands[0]["content"].setdefault("parts", [])
                 cands[0]["model"] = model
                 return cands[0]
-            last = f"{model} {r.status_code} : {_short_error(r)}"
+            errors[model] = f"{r.status_code} {_short_error(r)}"
             if r.status_code not in (429, 500, 503):
-                raise RuntimeError(last)  # erreur permanente (clé, modèle inconnu...)
+                raise RuntimeError(f"{model} : {errors[model]}")  # erreur permanente (clé, modèle inconnu...)
             if r.status_code == 429 and "quota" in r.text.lower():
                 break  # quota épuisé : inutile de réessayer ce modèle, on passe au suivant
             time.sleep(1)
-    raise RuntimeError(f"Gemini indisponible ({last})")
+    raise RuntimeError("Gemini indisponible : " + " ; ".join(f"{m} → {e}" for m, e in errors.items()))
 
 
 def _short_error(r):
@@ -62,7 +62,9 @@ def _short_error(r):
     except Exception:
         msg = r.text
     if "quota" in msg.lower():
-        return "quota dépassé"
+        return "quota dépassé (limite gratuite atteinte)"
+    if "high demand" in msg.lower():
+        return "surchargé"
     return msg.split(". ")[0][:120]
 
 

@@ -8,7 +8,7 @@ Chaque outil a un niveau de risque, appliqué par gate.py (jamais par le modèle
 considéré comme non fiable : les actions suivantes du même tour sont signalées.
 """
 import ast, html, json, operator as op, re, subprocess, time
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import requests
 
@@ -147,6 +147,11 @@ def open_url(url):
     return "ouvert"
 
 
+def play_music(query):
+    termux("termux-open-url", "https://music.youtube.com/search?q=" + quote(query))
+    return f"YouTube Music ouvert sur : {query}"
+
+
 # ---------- Téléphone ----------
 
 def battery():
@@ -261,6 +266,9 @@ tool(forget, "confirm", "Supprime un fait de la mémoire", {"fact_id": (I, "num�
 tool(web_search, "auto", "Recherche sur le web (actualité, prix, lieux, faits récents). Mets la ville dans la requête pour un lieu.",
      {"query": (S, "la requête")}, external=True)
 tool(open_url, "confirm", "Ouvre une adresse web dans le navigateur", {"url": (S, "adresse http(s)")})
+tool(play_music, "confirm", "Ouvre YouTube Music sur un artiste, un titre ou un genre. Pour « ma musique "
+     "habituelle », cherche d'abord dans la mémoire (recall) ; si rien, demande et retiens la réponse.",
+     {"query": (S, "artiste, titre ou genre")})
 tool(battery, "auto", "État de la batterie")
 tool(network, "auto", "Infos sur la connexion Wi-Fi actuelle")
 tool(notify, "confirm", "Affiche une notification sur le téléphone",

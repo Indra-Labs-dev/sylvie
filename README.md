@@ -20,7 +20,7 @@ Ouvre une nouvelle session Termux, puis tape **`sylvie`**. Avec l'appli **Termux
 |---|---|---|
 | Base | heure, calcul | aucune (réponse instantanée, sans API) |
 | Mémoire | retenir, rechercher / oublier un souvenir | auto / confirmer |
-| Web | recherche Google (sources citées), repli DuckDuckGo si quota épuisé ; ouvrir une page | auto / confirmer |
+| Web | recherche Google (sources citées), repli DuckDuckGo si quota épuisé ; ouvrir une page ; musique (YouTube Music) | auto / confirmer |
 | Téléphone | batterie, Wi-Fi | auto |
 | Téléphone | notification, vibreur, lampe, presse-papiers, position (quartier et ville via OpenStreetMap), contacts, lire les SMS | confirmer |
 | Communication | envoyer un SMS, appeler | **taper OUI** |
@@ -36,6 +36,7 @@ Tape `/outils` pour la liste exacte.
 | `/memoire`, `/oublie N` | voir / effacer ce qu'elle a retenu |
 | `/outils`, `/journal` | outils disponibles, dernières actions autorisées ou refusées |
 | `/modele [nom]` | voir ou changer le modèle |
+| `/r` | réessayer la dernière question après une panne de l'API |
 | `/reset` | nouvelle conversation (la mémoire reste) |
 | `q` | quitter |
 
