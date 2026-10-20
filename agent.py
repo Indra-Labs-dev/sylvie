@@ -36,13 +36,14 @@ while True:
     q = input("\nToi> ").strip()
     if q in ("exit", "quit"):
         break
+    start = len(contents)
     contents.append({"role": "user", "parts": [{"text": q}]})
     for _ in range(6):
         try:
             msg = call(contents)
         except Exception as e:
             print("Erreur>", e)
-            contents.pop()
+            del contents[start:]
             break
         contents.append(msg)
         calls = [p["functionCall"] for p in msg.get("parts", []) if "functionCall" in p]
