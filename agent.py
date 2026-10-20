@@ -3,7 +3,7 @@ from tools import TOOLS, DECL
 from gate import ask, log
 
 KEY = os.environ["GEMINI_API_KEY"]
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 SYS = ("Tu t'appelles Sylvie, l'assistante personnelle de Navanime sur son téléphone Android. "
        "Réponds en français, de façon concise. "
