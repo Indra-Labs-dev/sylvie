@@ -47,11 +47,23 @@ def generate(contents, system=None, tools=None, thinking=True):
                 cands[0]["content"].setdefault("parts", [])
                 cands[0]["model"] = model
                 return cands[0]
-            last = f"{model} {r.status_code}: {r.text[:200]}"
+            last = f"{model} {r.status_code} : {_short_error(r)}"
             if r.status_code not in (429, 500, 503):
                 raise RuntimeError(last)  # erreur permanente (clé, modèle inconnu...)
+            if r.status_code == 429 and "quota" in r.text.lower():
+                break  # quota épuisé : inutile de réessayer ce modèle, on passe au suivant
             time.sleep(1)
-    raise RuntimeError("API surchargée ou injoignable. " + str(last))
+    raise RuntimeError(f"Gemini indisponible ({last})")
+
+
+def _short_error(r):
+    try:
+        msg = r.json()["error"]["message"]
+    except Exception:
+        msg = r.text
+    if "quota" in msg.lower():
+        return "quota dépassé"
+    return msg.split(". ")[0][:120]
 
 
 def text_of(content):

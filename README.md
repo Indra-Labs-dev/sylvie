@@ -20,9 +20,9 @@ Ouvre une nouvelle session Termux, puis tape **`sylvie`**. Avec l'appli **Termux
 |---|---|---|
 | Base | heure, calcul | aucune (réponse instantanée, sans API) |
 | Mémoire | retenir, rechercher / oublier un souvenir | auto / confirmer |
-| Web | recherche Google (sources citées), ouvrir une page | auto / confirmer |
+| Web | recherche Google (sources citées), repli DuckDuckGo si quota épuisé ; ouvrir une page | auto / confirmer |
 | Téléphone | batterie, Wi-Fi | auto |
-| Téléphone | notification, vibreur, lampe, presse-papiers, position, contacts, lire les SMS | confirmer |
+| Téléphone | notification, vibreur, lampe, presse-papiers, position (quartier et ville via OpenStreetMap), contacts, lire les SMS | confirmer |
 | Communication | envoyer un SMS, appeler | **taper OUI** |
 
 Tape `/outils` pour la liste exacte.
