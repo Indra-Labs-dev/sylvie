@@ -29,6 +29,15 @@ cd ~/agent && . ./.env && python agent.py
 
 Modèle par défaut : `gemini-3.6-flash`, avec repli sur `gemini-3.5-flash-lite` en cas de surcharge (429/503). Pour changer : `GEMINI_MODEL` et `GEMINI_FALLBACK` dans `.env`.
 
+## Voix
+
+- `v` : Sylvie t'écoute (reconnaissance vocale Android), puis traite ta phrase comme une saisie normale.
+- `/voix` : active ou désactive la lecture des réponses à voix haute (`SYLVIE_SPEAK=1` pour l'activer au démarrage).
+- Une nouvelle saisie coupe la parole en cours.
+- Les confirmations d'actions restent **tactiles** (boîte de dialogue) : un ordre capté par le micro ne peut jamais valider une action.
+
+Prérequis : appli Termux:API avec permission micro, et un moteur de synthèse vocale avec la voix française installée.
+
 ## Mise à jour
 
 ```bash
@@ -45,7 +54,7 @@ Affiche les commits et le diff, puis demande validation avant d'appliquer.
 
 ## Feuille de route
 
-- [ ] Voix : écoute (`termux-speech-to-text`) et parole (`termux-tts-speak`)
+- [x] Voix : écoute (`termux-speech-to-text`) et parole (`termux-tts-speak`)
 - [ ] Recherche web (appel Gemini séparé avec grounding)
 - [ ] Mémoire persistante (SQLite)
 - [ ] Outils SMS / calendrier avec confirmation renforcée

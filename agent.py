@@ -2,6 +2,7 @@ import os, time, requests
 from tools import TOOLS, DECL
 from gate import ask, log
 from fast import fast_path
+import voice
 
 KEY = os.environ["GEMINI_API_KEY"]
 MODELS = [os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
@@ -9,6 +10,7 @@ MODELS = [os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
 BASE = "https://generativelanguage.googleapis.com/v1beta/models/"
 DEBUG = os.environ.get("SYLVIE_DEBUG") == "1"
 THINKING = os.environ.get("SYLVIE_THINKING", "minimal")  # minimal | low | medium | high, "" = défaut du modèle
+SPEAK = os.environ.get("SYLVIE_SPEAK") == "1"  # lire les réponses à voix haute (basculer avec /voix)
 HTTP = requests.Session()  # réutilise la connexion TLS entre les appels
 SYS = ("Tu t'appelles Sylvie, l'assistante personnelle de Navanime sur son téléphone Android. "
        "Réponds en français, de façon concise. "
@@ -53,14 +55,33 @@ def run_tool(name, args):
     except Exception as e:
         return {"error": str(e)}
 
+def say(text):
+    print("IA>", text)
+    if SPEAK:
+        voice.speak(text)
+
 contents = []
 while True:
     q = input("\nToi> ").strip()
+    voice.stop()  # une nouvelle saisie coupe la parole en cours
     if q in ("exit", "quit"):
         break
+    if not q:
+        continue
+    if q == "/voix":
+        SPEAK = not SPEAK
+        print("Lecture à voix haute :", "activée" if SPEAK else "désactivée")
+        continue
+    if q.lower() in ("v", "/v"):
+        print("Je t'écoute...")
+        q = voice.listen()
+        if not q:
+            print("Je n'ai rien entendu.")
+            continue
+        print(f"Toi (voix)> {q}")
     quick = fast_path(q)
     if quick:  # demande triviale : réponse locale, sans appel API
-        print("IA>", quick)
+        say(quick)
         contents += [{"role": "user", "parts": [{"text": q}]}, {"role": "model", "parts": [{"text": quick}]}]
         continue
     start = len(contents)
@@ -75,7 +96,7 @@ while True:
         contents.append(msg)
         calls = [p["functionCall"] for p in msg.get("parts", []) if "functionCall" in p]
         if not calls:
-            print("IA>", " ".join(p.get("text", "") for p in msg.get("parts", [])))
+            say(" ".join(p.get("text", "") for p in msg.get("parts", [])))
             break
         contents.append({"role": "user", "parts": [
             {"functionResponse": {"name": c["name"], "response": run_tool(c["name"], c.get("args", {}))}}
