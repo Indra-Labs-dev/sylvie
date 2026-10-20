@@ -27,7 +27,7 @@ Installer aussi l'appli **Termux:API** (F-Droid) et autoriser micro, SMS et noti
 cd ~/agent && . ./.env && python agent.py
 ```
 
-Modèle par défaut : `gemini-2.5-flash`. Pour en changer : `export GEMINI_MODEL=nom`.
+Modèle par défaut : `gemini-3.8-flash`. Pour en changer : `export GEMINI_MODEL=nom`.
 
 ## Mise à jour
 

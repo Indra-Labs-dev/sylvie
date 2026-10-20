@@ -3,7 +3,7 @@ from tools import TOOLS, DECL
 from gate import ask, log
 
 KEY = os.environ["GEMINI_API_KEY"]
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 SYS = ("Tu t'appelles Sylvie, l'assistante personnelle de Navanime sur son téléphone Android. "
        "Réponds en français, de façon concise. "
@@ -15,7 +15,8 @@ def call(contents):
         "systemInstruction": {"parts": [{"text": SYS}]},
         "contents": contents,
         "tools": [{"functionDeclarations": DECL}]})
-    r.raise_for_status()
+    if not r.ok:
+        raise RuntimeError(f"API {r.status_code}: {r.text[:300]}")
     return r.json()["candidates"][0]["content"]
 
 def run_tool(name, args):
@@ -37,7 +38,12 @@ while True:
         break
     contents.append({"role": "user", "parts": [{"text": q}]})
     for _ in range(6):
-        msg = call(contents)
+        try:
+            msg = call(contents)
+        except Exception as e:
+            print("Erreur>", e)
+            contents.pop()
+            break
         contents.append(msg)
         calls = [p["functionCall"] for p in msg.get("parts", []) if "functionCall" in p]
         if not calls:
