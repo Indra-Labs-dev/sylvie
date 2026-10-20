@@ -1,42 +1,62 @@
 # Sylvie
 
-Agent IA personnel qui tourne sur Android via Termux. Le modèle est servi par l'API Gemini, et **toute action modifiante demande ta confirmation**.
-
-## Principe de sécurité
-
-- Chaque outil est classé `auto` (lecture seule) ou `confirm` (action) dans `tools.py`.
-- La porte de confirmation (`gate.py`) est dans le code, pas dans le prompt : le modèle ne peut pas la contourner.
-- Chaque décision (acceptée, refusée, exécutée) est écrite dans `actions.log`.
-- Le contenu renvoyé par les outils est traité comme une donnée, jamais comme une instruction.
+Agent IA personnel qui tourne sur Android via Termux, servi par l'API Gemini.
+Elle parle, écoute, cherche sur le web, se souvient de toi et agit sur le téléphone, **mais n'agit jamais sans ton accord**.
 
 ## Installation (Termux depuis F-Droid)
 
 ```bash
-pkg install -y python git termux-api
-pip install requests
 git clone https://github.com/Indra-Labs-dev/sylvie ~/agent
-cd ~/agent
-echo 'export GEMINI_API_KEY="ta_clé"' > .env && chmod 600 .env
+cd ~/agent && bash install.sh
+nano .env            # mets ta clé : export GEMINI_API_KEY="..."
 ```
 
-Installer aussi l'appli **Termux:API** (F-Droid) et autoriser micro, SMS et notifications.
+Installe aussi l'appli **Termux:API** (F-Droid) et donne-lui les permissions utiles : micro, SMS, contacts, téléphone, localisation.
+Ouvre une nouvelle session Termux, puis tape **`sylvie`**. Avec l'appli **Termux:Widget**, un raccourci « Sylvie » est aussi disponible sur l'écran d'accueil.
 
-## Lancer
+## Ce qu'elle sait faire
 
-```bash
-cd ~/agent && . ./.env && python agent.py
-```
+| Domaine | Outils | Validation |
+|---|---|---|
+| Base | heure, calcul | aucune (réponse instantanée, sans API) |
+| Mémoire | retenir, rechercher / oublier un souvenir | auto / confirmer |
+| Web | recherche Google (sources citées), ouvrir une page | auto / confirmer |
+| Téléphone | batterie, Wi-Fi | auto |
+| Téléphone | notification, vibreur, lampe, presse-papiers, position, contacts, lire les SMS | confirmer |
+| Communication | envoyer un SMS, appeler | **taper OUI** |
 
-Modèle par défaut : `gemini-3.6-flash`, avec repli sur `gemini-3.5-flash-lite` en cas de surcharge (429/503). Pour changer : `GEMINI_MODEL` et `GEMINI_FALLBACK` dans `.env`.
+Tape `/outils` pour la liste exacte.
 
-## Voix
+## Commandes
 
-- `v` : enregistre ta voix (Entrée pour terminer, 30 s max), Gemini la transcrit en français, puis Sylvie traite la phrase comme une saisie normale. L'enregistrement est supprimé juste après. `SYLVIE_STT=android` utilise à la place la reconnaissance vocale du système (qui suit la langue du téléphone).
-- `/voix` : active ou désactive la lecture des réponses à voix haute (`SYLVIE_SPEAK=1` pour l'activer au démarrage).
-- Une nouvelle saisie coupe la parole en cours.
-- Les confirmations d'actions restent **tactiles** (boîte de dialogue) : un ordre capté par le micro ne peut jamais valider une action.
+| Commande | Effet |
+|---|---|
+| `v` | parler (Entrée pour terminer) ; la voix est transcrite en français par Gemini |
+| `/voix` | lecture des réponses à voix haute |
+| `/memoire`, `/oublie N` | voir / effacer ce qu'elle a retenu |
+| `/outils`, `/journal` | outils disponibles, dernières actions autorisées ou refusées |
+| `/modele [nom]` | voir ou changer le modèle |
+| `/reset` | nouvelle conversation (la mémoire reste) |
+| `q` | quitter |
 
-Prérequis : appli Termux:API avec permission micro, et un moteur de synthèse vocale avec la voix française installée.
+## Sécurité
+
+- La porte de confirmation (`gate.py`) est **dans le code** : le modèle ne peut pas la contourner.
+- Trois niveaux : `auto` (lecture sans conséquence), `confirm` (boîte Oui/Non), `sensitive` (il faut taper **OUI**).
+- Le contenu venu de l'extérieur (pages web, SMS, presse-papiers) est marqué non fiable. Si une action est demandée après sa lecture, la boîte affiche un **avertissement d'injection**, et l'écriture en mémoire n'est plus automatique.
+- Les confirmations sont tactiles : une voix captée par le micro ne peut jamais valider une action.
+- Tout est journalisé dans `actions.log`. La mémoire (`sylvie.db`), la clé (`.env`) et les enregistrements restent sur le téléphone et ne sont jamais commités. Les enregistrements vocaux sont supprimés après transcription.
+
+## Réglages (`.env`)
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `GEMINI_MODEL` / `GEMINI_FALLBACK` | `gemini-3.6-flash` / `gemini-3.5-flash-lite` | modèle, et modèle de secours en cas de surcharge |
+| `SYLVIE_THINKING` | `minimal` | niveau de réflexion du modèle |
+| `SYLVIE_SPEAK=1` | off | lecture à voix haute dès le démarrage |
+| `SYLVIE_STT=android` | `gemini` | utiliser la reconnaissance vocale du système |
+| `SYLVIE_ANIM=0`, `NO_COLOR=1` | on | couper les animations / couleurs |
+| `SYLVIE_DEBUG=1` | off | afficher le modèle et le temps de chaque appel |
 
 ## Mise à jour
 
@@ -46,15 +66,8 @@ bash update.sh
 
 Affiche les commits et le diff, puis demande validation avant d'appliquer.
 
-## Ajouter un outil
+## Architecture
 
-1. Écrire la fonction dans `tools.py`.
-2. L'ajouter à `TOOLS` avec son niveau de risque (`auto` ou `confirm`).
-3. Déclarer ses paramètres dans `DECL`.
+`agent.py` (boucle, commandes) · `llm.py` (API Gemini) · `tools.py` (outils et niveaux de risque) · `gate.py` (confirmation, journal) · `memory.py` (SQLite) · `voice.py` (micro, synthèse) · `fast.py` (réponses locales) · `ui.py` (couleurs, animations)
 
-## Feuille de route
-
-- [x] Voix : écoute (`termux-speech-to-text`) et parole (`termux-tts-speak`)
-- [ ] Recherche web (appel Gemini séparé avec grounding)
-- [ ] Mémoire persistante (SQLite)
-- [ ] Outils SMS / calendrier avec confirmation renforcée
+Pour ajouter un outil : écrire la fonction dans `tools.py`, puis l'enregistrer avec `tool(fonction, "auto"|"confirm"|"sensitive", "description", {paramètres})`.
