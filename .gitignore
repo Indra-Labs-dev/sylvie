@@ -3,3 +3,5 @@ actions.log
 __pycache__/
 *.pyc
 .voice.*
+sylvie.db
+sylvie.db-*

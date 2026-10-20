@@ -11,8 +11,9 @@ def listen(timeout=30):
         return ""
     return r.stdout.strip()
 
-def record(path, limit=30):
-    """Enregistre le micro dans `path` (AAC/m4a) jusqu'à Entrée ou `limit` secondes."""
+def record(path, limit=30, wait=None):
+    """Enregistre le micro dans `path` (AAC/m4a) jusqu'à Entrée ou `limit` secondes.
+    `wait` : fonction appelée pendant l'enregistrement (doit rendre la main quand l'utilisateur a fini)."""
     subprocess.run(["termux-microphone-record", "-q"], capture_output=True)  # coupe un éventuel enregistrement resté ouvert
     try:
         os.remove(path)
@@ -26,7 +27,10 @@ def record(path, limit=30):
     if r.returncode != 0:
         return False
     try:
-        input(f"Parle, puis appuie sur Entrée ({limit} s max)... ")
+        if wait:
+            wait()
+        else:
+            input(f"Parle, puis appuie sur Entrée ({limit} s max)... ")
     finally:
         subprocess.run(["termux-microphone-record", "-q"], capture_output=True)
     time.sleep(0.7)  # laisse le fichier se finaliser
