@@ -1,2 +1,4 @@
 .env
 actions.log
+__pycache__/
+*.pyc
