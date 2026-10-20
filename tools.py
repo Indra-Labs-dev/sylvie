@@ -1,7 +1,12 @@
 import ast, operator as op, subprocess, time
 
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
+        "septembre", "octobre", "novembre", "décembre"]
+
 def get_time():
-    return time.strftime("%A %d %B %Y %H:%M")
+    n = time.localtime()
+    return f"{JOURS[n.tm_wday]} {n.tm_mday} {MOIS[n.tm_mon - 1]} {n.tm_year}, {n.tm_hour:02d}:{n.tm_min:02d}"
 
 OPS = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul, ast.Div: op.truediv, ast.Mod: op.mod}
 

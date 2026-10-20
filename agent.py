@@ -1,12 +1,14 @@
 import os, time, requests
 from tools import TOOLS, DECL
 from gate import ask, log
+from fast import fast_path
 
 KEY = os.environ["GEMINI_API_KEY"]
 MODELS = [os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"),
           os.environ.get("GEMINI_FALLBACK", "gemini-3.5-flash-lite")]
 BASE = "https://generativelanguage.googleapis.com/v1beta/models/"
 DEBUG = os.environ.get("SYLVIE_DEBUG") == "1"
+THINKING = os.environ.get("SYLVIE_THINKING", "minimal")  # minimal | low | medium | high, "" = défaut du modèle
 HTTP = requests.Session()  # réutilise la connexion TLS entre les appels
 SYS = ("Tu t'appelles Sylvie, l'assistante personnelle de Navanime sur son téléphone Android. "
        "Réponds en français, de façon concise. "
@@ -17,6 +19,8 @@ def call(contents):
     body = {"systemInstruction": {"parts": [{"text": SYS}]},
             "contents": contents,
             "tools": [{"functionDeclarations": DECL}]}
+    if THINKING:
+        body["generationConfig"] = {"thinkingConfig": {"thinkingLevel": THINKING}}
     last = None
     for model in MODELS:
         for attempt in range(2):
@@ -54,6 +58,11 @@ while True:
     q = input("\nToi> ").strip()
     if q in ("exit", "quit"):
         break
+    quick = fast_path(q)
+    if quick:  # demande triviale : réponse locale, sans appel API
+        print("IA>", quick)
+        contents += [{"role": "user", "parts": [{"text": q}]}, {"role": "model", "parts": [{"text": quick}]}]
+        continue
     start = len(contents)
     contents.append({"role": "user", "parts": [{"text": q}]})
     for _ in range(6):
