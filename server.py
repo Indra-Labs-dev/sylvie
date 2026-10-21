@@ -6,7 +6,7 @@ Sécurité (appliquée ici, pas par le modèle) :
   - l'en-tête Host est vérifié (contre le DNS rebinding) et, pour les envois, Origin / Sec-Fetch-Site (contre le CSRF) ;
   - les autorisations d'actions se font dans l'interface : SMS et appels exigent de taper OUI.
 """
-import contextlib, hmac, json, os, re, secrets, struct, sys, threading, time, zlib
+import base64, contextlib, hmac, io, wave, json, os, re, secrets, struct, sys, threading, time, zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -19,6 +19,7 @@ TOKEN_FILE = os.path.join(HERE, ".token")
 UI_DIR = os.path.join(HERE, "web_ui")
 APPROVAL_TIMEOUT = 180
 MAX_BODY = 20_000
+MAX_VOICE = 5_600_000    # ~4 Mo de WAV une fois décodé (≈ 2 min à 16 kHz)
 MAX_UPLOAD = 11_000_000   # ~8 Mo de fichier une fois décodé
 UPLOAD_EXT = files.TEXT_EXT | files.IMAGE_EXT | {".pdf", ".docx", ".xlsx", ".pptx"}
 
@@ -127,6 +128,29 @@ class WebIO(engine.IO):
             yield
         finally:
             hub.publish("busy", label=None)
+
+
+def voice_turn(data):
+    """Phrase dite dans le navigateur (WAV mono) : transcription par Gemini (audio privé), puis tour normal."""
+    try:
+        raw = base64.b64decode(str(data or ""), validate=True)
+    except ValueError:
+        raise ValueError("audio illisible")
+    if len(raw) > MAX_VOICE * 3 // 4:
+        raise ValueError("audio trop long")
+    try:
+        with wave.open(io.BytesIO(raw)) as w:
+            if w.getnchannels() != 1 or not 8000 <= w.getframerate() <= 48000 or w.getsampwidth() != 2 or w.getnframes() / w.getframerate() > 60:
+                raise ValueError("audio : WAV mono 16 bits, 60 s maximum")
+    except (wave.Error, EOFError):
+        raise ValueError("audio : WAV invalide")
+    if Web.lock.locked():
+        return "busy"
+    text = agent.transcribe_bytes(raw, "audio/wav").strip().lstrip("/ ")[:4000]
+    if not text:
+        hub.publish("voice", empty=True)
+        return "empty"
+    return "started" if start_turn(text) else "busy"
 
 
 def start_turn(text):
@@ -419,7 +443,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(403, {"error": "requête externe refusée"})
         try:
             path = urlparse(self.path).path
-            code, out = self.route(path, self._body(MAX_UPLOAD if path == "/api/upload" else MAX_BODY))
+            code, out = self.route(path, self._body({"/api/upload": MAX_UPLOAD, "/api/voice": MAX_VOICE}.get(path, MAX_BODY)))
         except (ValueError, json.JSONDecodeError) as e:
             code, out = 400, {"error": str(e)}
         except Exception as e:
@@ -451,6 +475,8 @@ class Handler(BaseHTTPRequestHandler):
             return 200, run_pending(int(d.get("id")), bool(d.get("ok")), str(d.get("text", "")))
         if path == "/api/mic":
             return 200, {"result": mic_toggle()}
+        if path == "/api/voice":
+            return 200, {"result": voice_turn(d.get("data"))}
         if path == "/api/speak":
             Web.speak = bool(d.get("on"))
             if not Web.speak:

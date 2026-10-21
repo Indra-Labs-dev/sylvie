@@ -48,6 +48,8 @@ label{font-size:.8rem;color:var(--dim);display:block;margin:8px 0 3px}
 #composer textarea{resize:none;max-height:120px;flex:1}
 #composer .btn{flex:none;width:46px;padding:0;font-size:1.15rem}
 #mic.on{background:var(--bad);color:#fff;animation:pulse 1s infinite}
+#hf.on{background:var(--accent);color:#000;animation:pulse 1.6s infinite}
+#hfbar{padding:6px 12px;font-size:.8rem;color:var(--dim);background:var(--panel);border-top:1px solid var(--line);text-align:center}
 #stop{display:none;background:var(--bad);color:#fff}
 nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;background:none;border:0;padding:9px 2px 8px;color:var(--dim);font-size:.72rem;cursor:pointer;position:relative}
@@ -77,8 +79,10 @@ body.mini header{padding:6px 12px}body.mini nav,body.mini #open-full{display:non
   <section id="v-goals" class="view"></section>
   <section id="v-set" class="view"></section>
 </main>
+<div id="hfbar" hidden></div>
 <form id="composer" autocomplete="off">
   <button type="button" class="btn" id="mic" aria-label="Parler">🎙</button>
+  <button type="button" class="btn" id="hf" aria-label="Conversation mains libres">🎧</button>
   <button type="button" class="btn" id="attach" aria-label="Joindre un fichier">📎</button>
   <input type="file" id="file" hidden>
   <textarea id="input" rows="1" placeholder="Écris à Sylvie…" enterkeyhint="send"></textarea>
@@ -170,7 +174,8 @@ function updateBadge() {
 function handle(ev) {
   switch (ev.type) {
     case "user": push(el("div", "msg user", ev.text)); break;
-    case "say": push(el("div", "msg sylvie", ev.text)); break;
+    case "say": push(el("div", "msg sylvie", ev.text)); hfSpeak(ev.text); break;
+    case "voice": if (ev.empty) hfResume(); break;
     case "tool": push(el("div", "chip " + ev.risk, "⚙ " + ev.name + (ev.args ? " " + ev.args : ""))); break;
     case "image": { const im = el("img", "shot"); im.src = ev.src; im.alt = "Ce que Sylvie a vu"; push(im); break; }
     case "info": push(el("div", "note " + ev.level, ev.text)); break;
@@ -188,7 +193,7 @@ function handle(ev) {
 }
 let busyNow = false;
 function setBusy(label, idle) {
-  if (idle) { busyNow = false; $("#stop").style.display = "none"; }
+  if (idle) { busyNow = false; $("#stop").style.display = "none"; setTimeout(hfResume, 400); }
   else if (label) { busyNow = true; $("#stop").style.display = "block"; }
   $("#dot").classList.toggle("busy", !!label || busyNow);
   $("#status").textContent = label || (busyNow ? "Au travail…" : "Prête");
@@ -221,6 +226,99 @@ $("#file").onchange = () => {
 };
 $("#stop").onclick = () => api("/api/stop").catch(e => toast(e.message));
 $("#mic").onclick = () => api("/api/mic").then(r => { if (r.result === "busy") toast("Sylvie est occupée."); }).catch(e => toast(e.message));
+
+
+/* ---------- conversation mains libres : micro du navigateur, détection de silence ---------- */
+const hf = { on: false, state: "off", stream: null, ctx: null, node: null, wake: null, floor: 0.01, buf: [], pre: [], voiced: 0, quiet: 0, started: 0, restoreSpeak: false };
+const HF_RATE = 16000, HF_MAX_S = 25, HF_END_MS = 900, HF_MIN_MS = 400;
+function hfBar(t) { const b = $("#hfbar"); b.hidden = !t; b.textContent = t || ""; }
+async function hfStart() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast("Micro indisponible dans ce navigateur"); return; }
+  try { hf.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } }); }
+  catch (e) { toast("Micro refusé : autorise-le pour ce site dans Chrome"); return; }
+  hf.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = hf.ctx.createMediaStreamSource(hf.stream);
+  hf.node = hf.ctx.createScriptProcessor(4096, 1, 1);
+  hf.node.onaudioprocess = hfFrame;
+  src.connect(hf.node); hf.node.connect(hf.ctx.destination);
+  hf.on = true; $("#hf").classList.add("on");
+  try { if (navigator.wakeLock) hf.wake = await navigator.wakeLock.request("screen"); } catch (e) {}
+  if (S.speak) { hf.restoreSpeak = true; api("/api/speak", { on: false }).then(refresh).catch(() => {}); }   // la voix est celle du navigateur
+  toast("Mains libres : garde cet écran ouvert");
+  hfResume();
+}
+function hfStop() {
+  hf.on = false; hf.state = "off"; $("#hf").classList.remove("on"); hfBar("");
+  try { speechSynthesis.cancel(); } catch (e) {}
+  try { hf.node && hf.node.disconnect(); hf.ctx && hf.ctx.close(); } catch (e) {}
+  if (hf.stream) hf.stream.getTracks().forEach(t => t.stop());
+  try { hf.wake && hf.wake.release(); } catch (e) {}
+  hf.node = hf.ctx = hf.stream = hf.wake = null;
+  if (hf.restoreSpeak) { hf.restoreSpeak = false; api("/api/speak", { on: true }).then(refresh).catch(() => {}); }
+}
+function hfResume() {
+  if (!hf.on || hf.state === "sending") return;
+  if (busyNow || speechSynthesis.speaking || Object.keys(asks).length) { hf.state = "wait"; hfBar(Object.keys(asks).length ? "🎧 J'attends ton accord (touche Autoriser ou Refuser)" : "🎧 Sylvie travaille…"); return; }
+  hf.buf = []; hf.pre = []; hf.voiced = hf.quiet = 0; hf.started = 0; hf.state = "listen"; hfBar("🎧 Je t'écoute…");
+}
+function hfFrame(e) {
+  if (!hf.on || (hf.state !== "listen")) return;
+  const x = e.inputBuffer.getChannelData(0), n = x.length;
+  let sum = 0; for (let i = 0; i < n; i++) sum += x[i] * x[i];
+  const rms = Math.sqrt(sum / n), ms = n / hf.ctx.sampleRate * 1000;
+  const thr = Math.max(0.02, hf.floor * 3);
+  const chunk = hfDownsample(x, hf.ctx.sampleRate);
+  if (rms > thr) { hf.voiced++; hf.quiet = 0; } else { hf.quiet += ms; if (!hf.started) hf.floor = hf.floor * 0.95 + rms * 0.05; }
+  if (!hf.started) {
+    hf.pre.push(chunk); if (hf.pre.length > 3) hf.pre.shift();   // ~0,7 s avant la voix, pour ne pas couper le début
+    if (hf.voiced >= 2) { hf.started = Date.now(); hf.buf = hf.pre.slice(); hfBar("🎧 …"); }
+    return;
+  }
+  hf.buf.push(chunk);
+  const dur = Date.now() - hf.started;
+  if (hf.quiet >= HF_END_MS || dur > HF_MAX_S * 1000) {
+    if (dur - hf.quiet < HF_MIN_MS) { hfResume(); return; }       // bruit bref : on ignore
+    hfSend(hf.buf);
+  }
+}
+function hfDownsample(x, rate) {
+  const r = rate / HF_RATE, out = new Float32Array(Math.floor(x.length / r));
+  for (let i = 0; i < out.length; i++) { let a = Math.floor(i * r), b = Math.max(a + 1, Math.floor((i + 1) * r)), s = 0; for (let j = a; j < b && j < x.length; j++) s += x[j]; out[i] = s / (b - a); }
+  return out;
+}
+function hfWav(chunks) {
+  let len = 0; chunks.forEach(c => len += c.length);
+  const buf = new ArrayBuffer(44 + len * 2), v = new DataView(buf);
+  const w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + len * 2, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true); v.setUint32(24, HF_RATE, true); v.setUint32(28, HF_RATE * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, "data"); v.setUint32(40, len * 2, true);
+  let o = 44; chunks.forEach(c => { for (let i = 0; i < c.length; i++, o += 2) v.setInt16(o, Math.max(-1, Math.min(1, c[i])) * 32767, true); });
+  return new Uint8Array(buf);
+}
+async function hfSend(chunks) {
+  hf.state = "sending"; hfBar("🎧 Je réfléchis à ce que tu as dit…");
+  const bytes = hfWav(chunks); let bin = ""; for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+  try {
+    const r = await api("/api/voice", { data: btoa(bin) });
+    if (r.result === "busy") toast("Sylvie est occupée.");
+    hf.state = r.result === "started" ? "wait" : "off";
+  } catch (e) { toast(e.message); hf.state = "off"; }
+  if (hf.state === "off" && hf.on) { hf.state = "wait"; hfResume(); }
+  else if (hf.on) hfBar("🎧 Sylvie travaille…");
+}
+function hfSpeak(text) {
+  if (!hf.on || !window.speechSynthesis) return;
+  const clean = String(text).replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}]/gu, " ").replace(/https?:\/\/\S+/g, " lien ").slice(0, 1500);
+  const u = new SpeechSynthesisUtterance(clean); u.lang = "fr-FR";
+  u.onend = u.onerror = () => setTimeout(hfResume, 300);
+  hf.state = "wait"; hfBar("🎧 Sylvie parle…");
+  speechSynthesis.speak(u);
+}
+$("#hf").onclick = () => hf.on ? hfStop() : hfStart();
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState === "visible" && hf.on && !hf.wake) { try { hf.wake = await navigator.wakeLock.request("screen"); } catch (e) {} }
+});
 
 /* ---------- états : attente, tâches, objectifs, réglages ---------- */
 async function refresh() {

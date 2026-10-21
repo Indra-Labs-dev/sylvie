@@ -56,6 +56,11 @@ Sylvie peut agir seule, mais **tu valides le cadre une fois**, et le code appliq
 - **Veille** : « surveille Huawei, Wazuh et Zabbix » → vérification quotidienne du catalogue CISA KEV et/ou des CVE du NIST, alerte seulement s'il y a du nouveau, sans coût d'IA. `/veille`.
 - **Candidatures** (CELPAID, SONEC, GNOC…) : statut, date limite, rappel 2 jours avant la date limite et relance 7 jours après l'envoi. `/candidatures`.
 
+## Conversation mains libres (interface web)
+
+Bouton 🎧 : le micro du navigateur écoute en continu, détecte la fin de ta phrase (≈ 1 s de silence), l'envoie à Gemini pour transcription (l'audio ne va jamais à un fournisseur public), puis Sylvie répond à voix haute avec la voix du téléphone et se remet à t'écouter. Pendant qu'elle parle ou travaille, le micro est coupé (pas d'écho). Les accords restent tactiles : aucune action ne s'autorise à la voix.
+Limites d'Android : l'écran reste allumé (verrou d'écran activé) et la page doit rester au premier plan ; Chrome demande l'autorisation du micro la première fois. La version « mot d'éveil, écran éteint » n'est pas possible depuis un navigateur.
+
 ## Commandes
 
 | Commande | Effet |

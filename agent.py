@@ -66,11 +66,15 @@ def run_tool(name, args, state):
     return engine.run_tool(name, args, state, CliIO())
 
 
-def transcribe(path):
+def transcribe(path, mime="audio/m4a"):
     with open(path, "rb") as f:
-        data = base64.b64encode(f.read()).decode()
+        return transcribe_bytes(f.read(), mime)
+
+
+def transcribe_bytes(raw, mime="audio/m4a"):
+    data = base64.b64encode(raw).decode()
     cand = llm.generate([{"role": "user", "parts": [
-        {"inlineData": {"mimeType": "audio/m4a", "data": data}},
+        {"inlineData": {"mimeType": mime, "data": data}},
         {"text": "Transcris exactement ce message vocal, qui est en français. Réponds uniquement par la "
                  "transcription. S'il n'y a pas de parole, réponds par un seul point."}]}],
         system="Tu es un outil de transcription. Tu ne fais que transcrire.", role="audio", thinking=False)

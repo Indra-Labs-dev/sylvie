@@ -190,5 +190,41 @@ class ServerTest(unittest.TestCase):
             self.assertIn("ping-test", got)
 
 
+    # --- voix (mains libres)
+    @staticmethod
+    def wav(seconds=1.0, rate=16000, channels=1):
+        import base64, io, wave
+        b = io.BytesIO()
+        with wave.open(b, "wb") as w:
+            w.setnchannels(channels); w.setsampwidth(2); w.setframerate(rate)
+            w.writeframes(b"\x00\x01" * int(rate * seconds) * channels)
+        return base64.b64encode(b.getvalue()).decode()
+
+    def test_voice_transcribes_then_runs_a_turn(self):
+        with mock.patch.object(server.agent, "transcribe_bytes", return_value="/quelle heure est-il") as tr, \
+             mock.patch.object(engine.llm, "generate", return_value=reply("Il est midi")):
+            r = self.post("/api/voice", {"data": self.wav()})
+            self.assertEqual(r.json()["result"], "started")
+            wait_for(lambda: self.events("say"))
+        self.assertEqual(tr.call_args[0][1], "audio/wav")
+        self.assertEqual(self.events("user")[0]["text"], "quelle heure est-il")      # le « / » initial est retiré
+
+    def test_voice_empty_busy_and_validation(self):
+        with mock.patch.object(server.agent, "transcribe_bytes", return_value=""):
+            self.assertEqual(self.post("/api/voice", {"data": self.wav()}).json()["result"], "empty")
+            self.assertTrue(self.events("voice")[0]["empty"])
+        with mock.patch.object(server.agent, "transcribe_bytes") as tr:
+            for bad in ("pas du base64 !!", "UklGRg==", self.wav(channels=2), self.wav(rate=4000), self.wav(seconds=61, rate=8000)):
+                self.assertEqual(self.post("/api/voice", {"data": bad}).status_code, 400, bad[:20])
+            self.assertEqual(self.post("/api/voice", {}).status_code, 400)
+            server.Web.lock.acquire()
+            try:
+                self.assertEqual(self.post("/api/voice", {"data": self.wav()}).json()["result"], "busy")
+            finally:
+                server.Web.lock.release()
+            tr.assert_not_called()
+        self.assertEqual(requests.post(self.base + "/api/voice", json={"data": self.wav()}, timeout=5).status_code, 401)
+
+
 if __name__ == "__main__":
     unittest.main()
