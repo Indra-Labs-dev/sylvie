@@ -6,11 +6,11 @@ Sécurité (appliquée ici, pas par le modèle) :
   - l'en-tête Host est vérifié (contre le DNS rebinding) et, pour les envois, Origin / Sec-Fetch-Site (contre le CSRF) ;
   - les autorisations d'actions se font dans l'interface : SMS et appels exigent de taper OUI.
 """
-import contextlib, hmac, json, os, secrets, struct, sys, threading, time, zlib
+import contextlib, hmac, json, os, re, secrets, struct, sys, threading, time, zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-import agent, apis, engine, gate, memory, planner, router, scheduler, tools, voice
+import agenda, agent, apis, engine, files, gate, memory, planner, router, scheduler, tools, voice
 from fast import fast_path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +19,8 @@ TOKEN_FILE = os.path.join(HERE, ".token")
 UI_DIR = os.path.join(HERE, "web_ui")
 APPROVAL_TIMEOUT = 180
 MAX_BODY = 20_000
+MAX_UPLOAD = 11_000_000   # ~8 Mo de fichier une fois décodé
+UPLOAD_EXT = files.TEXT_EXT | files.IMAGE_EXT | {".pdf", ".docx", ".xlsx", ".pptx"}
 
 
 # ------------------------------------------------------------------ bus d'événements (SSE)
@@ -104,6 +106,7 @@ class WebIO(engine.IO):
     def ok(self, msg): hub.publish("info", level="ok", text=msg)
     def error(self, msg): hub.publish("info", level="error", text=msg)
     def progress(self, msg): hub.publish("info", level="progress", text=msg)
+    def image(self, data_url): hub.publish("image", src=data_url)
 
     def say(self, text):
         hub.publish("say", text=text)
@@ -192,8 +195,35 @@ def mic_toggle():
     return "start"
 
 
+def save_upload(name, b64):
+    """Dépose un fichier envoyé depuis l'interface dans le dossier inbox de Sylvie."""
+    import base64, binascii
+    base = re.sub(r"[^\w.\- ]", "_", os.path.basename(str(name or "").replace("\\", "/"))).strip(" .")[:80]
+    ext = os.path.splitext(base)[1].lower()
+    if not base or ext not in UPLOAD_EXT:
+        raise ValueError("type de fichier non pris en charge")
+    try:
+        raw = base64.b64decode(str(b64 or ""), validate=True)
+    except (binascii.Error, ValueError):
+        raise ValueError("fichier illisible")
+    if not raw or len(raw) > 8_000_000:
+        raise ValueError("fichier vide ou trop gros (8 Mo maximum)")
+    target = os.path.join(files.inbox_dir(), base)
+    if os.path.exists(target):
+        target = os.path.join(files.inbox_dir(), time.strftime("%H%M%S-") + base)
+    with open(target, "wb") as f:
+        f.write(raw)
+    gate.log("DEPOT", os.path.basename(target), {"octets": len(raw)})
+    return {"path": "inbox/" + os.path.basename(target), "octets": len(raw)}
+
+
 def start_goal(goal):
     return start_turn("/objectif " + goal)
+
+
+def agenda_week():
+    evs = agenda.agenda_list(7)
+    return evs if isinstance(evs, list) else []
 
 
 def state():
@@ -204,6 +234,7 @@ def state():
                   "next": scheduler.fmt(j["next_run"]) if j["enabled"] else "", "enabled": j["enabled"], "last": j["last_result"][:200]}
                  for j in scheduler.jobs()],
         "pending": scheduler.pending_list(),
+        "agenda": agenda_week(),
         "goals": [{k: g[k] for k in ("id", "goal", "status", "result", "done", "calls")} | {"steps": len((g["plan"] or {}).get("steps", []))}
                   for g in planner.goals(8)],
     }
@@ -311,9 +342,9 @@ class Handler(BaseHTTPRequestHandler):
                 got = got or v
         return bool(got) and hmac.compare_digest(got, self.server.token)
 
-    def _body(self):
+    def _body(self, limit=MAX_BODY):
         n = int(self.headers.get("Content-Length") or 0)
-        if n > MAX_BODY:
+        if n > limit:
             raise ValueError("requête trop grande")
         return json.loads(self.rfile.read(n) or b"{}") if n else {}
 
@@ -376,8 +407,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.headers.get("Sec-Fetch-Site", "same-origin") not in ("same-origin", "none"):
             return self._send(403, {"error": "requête externe refusée"})
         try:
-            data = self._body()
-            code, out = self.route(urlparse(self.path).path, data)
+            path = urlparse(self.path).path
+            code, out = self.route(path, self._body(MAX_UPLOAD if path == "/api/upload" else MAX_BODY))
         except (ValueError, json.JSONDecodeError) as e:
             code, out = 400, {"error": str(e)}
         except Exception as e:
@@ -414,6 +445,8 @@ class Handler(BaseHTTPRequestHandler):
             if not Web.speak:
                 voice.stop()
             return 200, {"speak": Web.speak}
+        if path == "/api/upload":
+            return 200, save_upload(d.get("name"), d.get("data"))
         if path == "/api/job/add":
             kw = {k: d.get(k, "") for k in ("kind", "title", "text", "at", "daily", "weekdays", "tools_list", "api", "params")}
             kw["every_minutes"] = int(d.get("every_minutes") or 0)

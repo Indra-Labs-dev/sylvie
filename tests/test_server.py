@@ -5,6 +5,8 @@ from unittest import mock
 TMP = tempfile.mkdtemp()
 os.environ["SYLVIE_DB"] = os.path.join(TMP, "s.db")
 os.environ["GEMINI_API_KEY"] = "gk"
+os.environ["SYLVIE_FILES_ROOTS"] = os.path.join(TMP, "docs")
+os.makedirs(os.path.join(TMP, "docs"))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import requests  # noqa: E402
 import engine, server, tools  # noqa: E402
@@ -34,6 +36,7 @@ def wait_for(pred, timeout=5):
 class ServerTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        os.environ.update(SYLVIE_DB=os.path.join(TMP, "s.db"), SYLVIE_FILES_ROOTS=os.path.join(TMP, "docs"))
         server.PORT = free_port()
         server.TOKEN_FILE = os.path.join(TMP, ".token")
         cls.tok = server.token()
@@ -160,6 +163,20 @@ class ServerTest(unittest.TestCase):
         self.assertFalse([j for j in st["jobs"] if j["id"] == jid][0]["enabled"])
         self.assertEqual(self.post("/api/job", {"id": jid, "action": "delete"}).status_code, 200)
         self.assertEqual(self.post("/api/job", {"id": jid, "action": "delete"}).status_code, 404)
+
+    def test_upload_goes_to_inbox_and_is_filtered(self):
+        import base64
+        enc = lambda b: base64.b64encode(b).decode()
+        r = self.post("/api/upload", {"name": "../../etc/Rapport final.pdf", "data": enc(b"%PDF-1.4 test")})
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["path"], "inbox/Rapport final.pdf")
+        self.assertTrue(os.path.exists(os.path.join(TMP, "docs", "inbox", "Rapport final.pdf")))
+        again = self.post("/api/upload", {"name": "Rapport final.pdf", "data": enc(b"%PDF-1.4 autre")}).json()["path"]
+        self.assertNotEqual(again, "inbox/Rapport final.pdf")          # pas d'écrasement
+        for bad in ({"name": "virus.exe", "data": enc(b"MZ")}, {"name": ".env", "data": enc(b"k")}, {"name": "a.txt", "data": "pas du base64 !"},
+                    {"name": "a.txt", "data": ""}, {"name": "a.txt", "data": enc(b"x" * 8_100_000)}):
+            self.assertEqual(self.post("/api/upload", bad).status_code, 400, bad["name"])
+        self.assertEqual(requests.post(self.base + "/api/upload", json={"name": "a.txt", "data": enc(b"x")}, timeout=5).status_code, 401)
 
     def test_event_stream(self):
         server.hub.publish("info", level="info", text="ping-test")

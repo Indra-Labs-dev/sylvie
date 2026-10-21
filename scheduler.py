@@ -16,7 +16,7 @@ MAX_JOBS = 40
 LATE_MAX = 12 * 3600       # au-delà, une tâche récurrente manquée est sautée
 MIN_EVERY = {"rappel": 1, "tache": 30, "briefing": 60, "surveillance": 10}
 FORBIDDEN = {"schedule_add", "schedule_remove", "objectif"}   # une tâche ne se reprogramme pas elle-même
-SAFE_DEFAULT = ["get_time", "calculate", "recall", "api_call", "api_info", "web_search", "schedule_list"]
+SAFE_DEFAULT = ["get_time", "calculate", "recall", "api_call", "api_info", "web_search", "schedule_list", "agenda_list"]
 LISTENERS = []             # fonctions appelées avec un dict {"type", ...} : interface web, journal
 
 DAYS = {"lun": 0, "mar": 1, "mer": 2, "jeu": 3, "ven": 4, "sam": 5, "dim": 6, "lundi": 0, "mardi": 1, "mercredi": 2,
@@ -299,11 +299,11 @@ def home():
 def briefing_text():
     city, lat, lon = home()
     return (f"Prépare mon briefing du matin en 8 lignes maximum : la date, la météo d'aujourd'hui à {city} "
-            f"(api_call meteo, latitude {lat}, longitude {lon}), mes rappels et tâches à venir (schedule_list), "
+            f"(api_call meteo, latitude {lat}, longitude {lon}), mes événements du jour et de demain (agenda_list) et mes rappels à venir (schedule_list), "
             "puis les 3 failles activement exploitées les plus récentes (api_call cisa_kev sans q). Ton chaleureux, sans markdown.")
 
 
-BRIEFING_TOOLS = ["api_call", "api_info", "schedule_list", "get_time", "recall"]
+BRIEFING_TOOLS = ["api_call", "api_info", "schedule_list", "agenda_list", "get_time", "recall"]
 
 
 def run_task(job):
@@ -484,3 +484,6 @@ tools.tool(schedule_add, "confirm",
            required=["kind", "title"], writes=True)
 tools.tool(schedule_list, "auto", "Liste les rappels, tâches et surveillances programmés")
 tools.tool(schedule_remove, "confirm", "Supprime une tâche programmée", {"job_id": (tools.I, "numéro de la tâche")})
+
+
+import agenda  # noqa: E402,F401  (enregistre les outils de l'agenda ; placé ici car agenda utilise scheduler)

@@ -61,6 +61,7 @@ h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)
 .toast{position:fixed;left:16px;right:16px;top:14px;z-index:9;background:var(--panel2);border:1px solid var(--accent);border-radius:var(--r);padding:11px 14px;box-shadow:0 8px 30px #0006}
 details summary{cursor:pointer;color:var(--accent);font-size:.85rem}
 body.mini header{padding:6px 12px}body.mini nav,body.mini #open-full{display:none}body.mini .view{padding:10px 12px}
+.shot{align-self:flex-start;max-width:80%;max-height:260px;border-radius:var(--r);border:1px solid var(--line)}
 .empty{color:var(--dim);text-align:center;margin:30px 0}
 </style>
 </head>
@@ -78,6 +79,8 @@ body.mini header{padding:6px 12px}body.mini nav,body.mini #open-full{display:non
 </main>
 <form id="composer" autocomplete="off">
   <button type="button" class="btn" id="mic" aria-label="Parler">🎙</button>
+  <button type="button" class="btn" id="attach" aria-label="Joindre un fichier">📎</button>
+  <input type="file" id="file" hidden>
   <textarea id="input" rows="1" placeholder="Écris à Sylvie…" enterkeyhint="send"></textarea>
   <button type="button" class="btn" id="stop" aria-label="Arrêter">■</button>
   <button type="submit" class="btn go" id="send" aria-label="Envoyer">➤</button>
@@ -164,6 +167,7 @@ function handle(ev) {
     case "user": push(el("div", "msg user", ev.text)); break;
     case "say": push(el("div", "msg sylvie", ev.text)); break;
     case "tool": push(el("div", "chip " + ev.risk, "⚙ " + ev.name + (ev.args ? " " + ev.args : ""))); break;
+    case "image": { const im = el("img", "shot"); im.src = ev.src; im.alt = "Ce que Sylvie a vu"; push(im); break; }
     case "info": push(el("div", "note " + ev.level, ev.text)); break;
     case "busy": setBusy(ev.label); break;
     case "idle": setBusy(null, true); break;
@@ -198,6 +202,17 @@ $("#composer").onsubmit = async e => {
   const text = input.value.trim(); if (!text) return;
   input.value = ""; input.style.height = "auto";
   try { await api("/api/chat", { text }); } catch (err) { toast(err.message); input.value = text; }
+};
+$("#attach").onclick = () => $("#file").click();
+$("#file").onchange = () => {
+  const f = $("#file").files[0]; $("#file").value = "";
+  if (!f) return;
+  if (f.size > 8e6) { toast("Fichier trop gros (8 Mo maximum)"); return; }
+  const rd = new FileReader();
+  rd.onload = () => api("/api/upload", { name: f.name, data: String(rd.result).split(",")[1] })
+    .then(r => { input.value = "[fichier : " + r.path + "] " + input.value; input.focus(); toast("Fichier reçu : " + r.path); })
+    .catch(e => toast(e.message));
+  rd.readAsDataURL(f);
 };
 $("#stop").onclick = () => api("/api/stop").catch(e => toast(e.message));
 $("#mic").onclick = () => api("/api/mic").then(r => { if (r.result === "busy") toast("Sylvie est occupée."); }).catch(e => toast(e.message));
@@ -239,6 +254,9 @@ function renderJobs() {
     r.append(mk("Lancer", "run"), mk(j.enabled ? "Pause" : "Réactiver", j.enabled ? "off" : "on"), mk("Supprimer", "delete", "no"));
     c.appendChild(r); v.appendChild(c);
   });
+  v.appendChild(el("h2", null, "Agenda · 7 jours"));
+  if (!(S.agenda || []).length) v.appendChild(empty("Rien de prévu. Dis-moi « ajoute dentiste vendredi à 15h »."));
+  (S.agenda || []).forEach(e => v.appendChild(el("div", "item", null, [el("div", "t", e.titre), el("div", "s", e.quand + (e.lieu ? " · " + e.lieu : ""))])));
   v.appendChild(el("h2", null, "Nouvelle tâche"));
   v.appendChild(jobForm());
 }

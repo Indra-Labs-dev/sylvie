@@ -1,7 +1,7 @@
 """Sylvie — agent IA personnel sur Termux. Lancer : . ./.env && python agent.py"""
 import base64, json, os, sys, threading
 
-import apis, engine, gate, llm, memory, planner, router, scheduler, tools, ui, voice
+import agenda, apis, camera, engine, files, gate, llm, memory, planner, router, scheduler, tools, ui, voice  # noqa: F401
 from fast import fast_path
 
 STT = os.environ.get("SYLVIE_STT", "gemini")  # gemini (enregistre + transcrit) | android
@@ -24,6 +24,7 @@ HELP = [
     ("/taches [rm|pause|reprise|lancer N]", "rappels, tâches et surveillances programmés"),
     ("/briefing HH:MM", "briefing du matin chaque jour à cette heure"),
     ("/attente", "actions que des tâches automatiques attendent de toi"),
+    ("/agenda [jours]", "événements à venir de l'agenda de Sylvie"),
     ("/r", "réessayer la dernière question (après une panne)"),
     ("/reset", "nouvelle conversation (la mémoire reste)"),
     ("/aide", "cette aide"),
@@ -166,6 +167,12 @@ def command(q, contents):
             ui.warn(str(e))
     elif cmd == "/attente":
         pending_cmd()
+    elif cmd == "/agenda":
+        evs = agenda.agenda_list(int(arg) if arg.strip().isdigit() else 7)
+        if isinstance(evs, str):
+            ui.info(evs)
+        for e in evs if isinstance(evs, list) else []:
+            ui.out(f"  {ui.violet(str(e['id']).rjust(3))}  {e['quand']}  {e['titre']}" + (ui.dim(f" · {e['lieu']}") if e.get("lieu") else ""))
     elif cmd == "/reset":
         contents.clear()
         ui.ok("Nouvelle conversation")

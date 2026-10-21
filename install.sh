@@ -4,7 +4,8 @@ set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
 echo "→ Paquets"
 pkg install -y python python-pip termux-api >/dev/null
-python -m pip install -q requests
+python -m pip install -q requests pypdf
+pkg install -y python-pillow >/dev/null 2>&1 || echo "(Pillow indisponible : les photos ne seront pas réduites)"
 echo "→ Commande 'sylvie'"
 LINE="alias sylvie='cd $DIR && . ./.env && python agent.py'"
 grep -qxF "$LINE" ~/.bashrc 2>/dev/null || echo "$LINE" >> ~/.bashrc

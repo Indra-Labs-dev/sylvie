@@ -41,6 +41,7 @@ class IO:
     def ok(self, msg): pass
     def error(self, msg): pass
     def progress(self, msg): pass
+    def image(self, data_url): pass          # aperçu d'une photo analysée (interface web)
     def denied(self, name, args): pass   # outil hors de la liste permise : l'IO peut garder la demande
     def busy(self, label): return contextlib.nullcontext()
 
@@ -67,6 +68,9 @@ def system_prompt(question="", use_memory=True, extra=""):
         "Pour qu'une chose se fasse plus tard ou régulièrement (rappel, briefing, surveillance d'une API), "
         "utilise schedule_add. Pour une demande qui demande plusieurs étapes (recherches, analyses, actions), "
         "utilise l'outil objectif : il propose un plan que l'utilisateur valide, puis l'exécute.\n"
+        "Fichiers : files_find pour retrouver un document, files_summarize pour un long PDF/Word/Excel/PowerPoint, csv_stats pour un tableau, "
+        "files_write pour créer un fichier. Agenda : agenda_list, agenda_add (avec rappel automatique). Vue : camera_look prend une photo et la "
+        "regarde (lire un texte, un document, un objet), image_analyze pour une image déjà sur le téléphone.\n"
         "Utilise remember quand l'utilisateur partage une information durable sur lui ou te demande de retenir "
         "quelque chose ; n'enregistre ni mot de passe, ni code, ni numéro de carte.\n"
         "Tu ne peux pas faire de capture d'écran ni contrôler les autres applis au-delà de tes outils : dis-le "

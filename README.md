@@ -38,6 +38,12 @@ Sylvie peut agir seule, mais **tu valides le cadre une fois**, et le code appliq
 - **Popup** : une notification permanente donne **Parler / Mini / Stop** sans ouvrir Termux. `/mini` est une version compacte : installe la page (menu du navigateur, « Installer l'application »), puis ouvre-la en fenêtre flottante depuis la barre latérale HyperOS. Une vraie bulle par-dessus les autres applis (comme Messenger) demande une application Android native, ce que Termux ne peut pas créer ; l'alternative est **Termux:Float** (F-Droid) pour une fenêtre de terminal flottante où lancer `sylvie`.
 - Pour que les tâches tournent écran éteint : `sylvie serve` prend un wake-lock ; désactive l'optimisation de batterie de Termux (Paramètres › Batterie › Termux › Aucune restriction, et verrouille l'appli dans les récents).
 
+## Fichiers, agenda, vision
+
+- **Fichiers** : Sylvie lit, cherche, résume et écrit, mais **seulement** dans les dossiers autorisés (`~/sylvie-files`, et Documents, Download, Pictures, DCIM après `termux-setup-storage`). Formats : texte, CSV (statistiques sans tout lire), JSON, PDF, Word, Excel, PowerPoint. Les chemins sont résolus pour de vrai (un lien symbolique ne peut pas en sortir), les fichiers cachés, `.env`, la base et le code de Sylvie sont interdits, **il n'existe aucun outil de suppression**, et écraser un fichier est une action sensible. Un document personnel n'est jamais envoyé à un fournisseur d'IA « public ». Le bouton 📎 de l'interface web dépose un fichier dans `~/sylvie-files/inbox`. Pour les PDF : `pip install pypdf` (fait par `install.sh`).
+- **Agenda** : Termux ne peut pas lire l'agenda Android, Sylvie tient donc le sien (`agenda_add`, `/agenda`), avec rappel automatique avant chaque événement et détection des conflits d'horaire. `agenda_phone` ouvre l'agenda du téléphone avec l'événement prérempli (tu touches Enregistrer), `agenda_import` lit un `.ics` exporté depuis Google Agenda, `agenda_export` produit un `.ics`. Les événements récurrents importés sont ignorés. Le briefing du matin inclut l'agenda.
+- **Vision** : `camera_look` prend une photo (avant ou arrière) et la regarde : lire une affiche, un document, un plat, un câble. `image_analyze` fait pareil sur une image du téléphone. Chaque photo demande ton accord, ne part que vers Gemini, apparaît en aperçu dans l'interface web et est supprimée aussitôt (sauf `keep`). Le texte lu dans une image est traité comme une donnée, jamais comme une instruction. `pkg install python-pillow` réduit les photos avant envoi.
+
 ## Commandes
 
 | Commande | Effet |
@@ -102,6 +108,6 @@ Affiche les commits et le diff, puis demande validation avant d'appliquer.
 
 ## Architecture
 
-`agent.py` (terminal, commandes) · `engine.py` (boucle modèle ↔ outils commune) · `scheduler.py` (rappels, tâches, surveillances) · `planner.py` (objectifs et sous-agents) · `server.py` + `web_ui/` (interface web) · `llm.py` + `router.py` (fournisseurs, pauses, budgets) · `apis.py` + `apis.json` (catalogue d'API) · `web.py` (lecture de pages sûre) · `tools.py` (outils et niveaux de risque) · `gate.py` (confirmation, journal) · `memory.py` (SQLite) · `voice.py` (micro, synthèse) · `fast.py` (réponses locales) · `ui.py` (couleurs, animations)
+`agent.py` (terminal, commandes) · `engine.py` (boucle modèle ↔ outils commune) · `scheduler.py` (rappels, tâches, surveillances) · `planner.py` (objectifs et sous-agents) · `files.py` · `agenda.py` · `camera.py` · `server.py` + `web_ui/` (interface web) · `llm.py` + `router.py` (fournisseurs, pauses, budgets) · `apis.py` + `apis.json` (catalogue d'API) · `web.py` (lecture de pages sûre) · `tools.py` (outils et niveaux de risque) · `gate.py` (confirmation, journal) · `memory.py` (SQLite) · `voice.py` (micro, synthèse) · `fast.py` (réponses locales) · `ui.py` (couleurs, animations)
 
 Pour ajouter un outil : écrire la fonction dans `tools.py`, puis l'enregistrer avec `tool(fonction, "auto"|"confirm"|"sensitive", "description", {paramètres})`.

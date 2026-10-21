@@ -21,18 +21,28 @@ TYPES = {
     "donnees": ["api_call", "api_info", "calculate", "get_time", "recall"],
     "telephone": ["battery", "network", "notify", "vibrate", "torch", "clipboard_get", "clipboard_set", "location",
                   "find_contact", "sms_list", "sms_send", "call", "open_url", "play_music"],
+    "fichiers": ["files_list", "files_find", "files_read", "files_summarize", "files_grep", "csv_stats", "files_write", "files_open"],
+    "agenda": ["agenda_list", "agenda_add", "agenda_update", "agenda_remove", "agenda_phone", "agenda_import", "agenda_export"],
+    "vision": ["camera_look", "image_analyze"],
     "redaction": [],
     "verification": [],
 }
 DEFAULT_TOOLS = {"recherche": ["web_search", "api_call", "api_info"], "donnees": ["api_call", "api_info", "calculate", "get_time"],
-                 "telephone": [], "redaction": [], "verification": []}
-PRIVATE_TOOLS = {"recall", "remember", "location", "find_contact", "sms_list", "sms_send", "call", "clipboard_get", "clipboard_set"}
-LABELS = {"recherche": "Recherche", "donnees": "Données", "telephone": "Téléphone", "redaction": "Rédaction", "verification": "Vérification"}
+                 "telephone": [], "fichiers": ["files_list", "files_find"], "agenda": ["agenda_list"], "vision": [],
+                 "redaction": [], "verification": []}
+PRIVATE_TYPES = {"telephone", "fichiers", "agenda", "vision"}
+PRIVATE_TOOLS = ({"recall", "remember", "location", "find_contact", "sms_list", "sms_send", "call", "clipboard_get", "clipboard_set"}
+                 | set(TYPES["fichiers"]) | set(TYPES["agenda"]) | set(TYPES["vision"]))
+LABELS = {"recherche": "Recherche", "donnees": "Données", "telephone": "Téléphone", "fichiers": "Fichiers", "agenda": "Agenda",
+          "vision": "Vision", "redaction": "Rédaction", "verification": "Vérification"}
 
 SUB_NOTES = {
     "recherche": "Tu es le sous-agent RECHERCHE de Sylvie. Cherche l'information demandée avec tes outils, recoupe-la, puis rends un compte rendu factuel de 12 lignes maximum (chiffres, dates, sources).",
     "donnees": "Tu es le sous-agent DONNÉES de Sylvie. Récupère les données avec les API, fais les calculs avec calculate, puis rends un compte rendu chiffré de 12 lignes maximum.",
     "telephone": "Tu es le sous-agent TÉLÉPHONE de Sylvie. N'utilise que les outils nécessaires à l'étape (chaque action sensible sera validée par l'utilisateur) et rends un compte rendu de ce qui a été fait ou lu.",
+    "fichiers": "Tu es le sous-agent FICHIERS de Sylvie. Cherche, lis ou résume les fichiers demandés (préfère files_summarize et csv_stats aux longues lectures), écris un fichier seulement si l'étape le demande, et rends un compte rendu de 12 lignes maximum avec les chemins utilisés.",
+    "agenda": "Tu es le sous-agent AGENDA de Sylvie. Consulte l'agenda et n'ajoute ou ne modifie des événements que si l'étape le demande ; signale les conflits d'horaire. Rends un compte rendu court.",
+    "vision": "Tu es le sous-agent VISION de Sylvie. Regarde avec camera_look ou image_analyze en posant une question précise, puis rends ce que tu as vu ou lu, fidèlement.",
     "redaction": "Tu es le sous-agent RÉDACTION de Sylvie. Sans outil, rédige le livrable demandé à partir des résultats précédents : français clair, concis, sans markdown lourd.",
     "verification": "Tu es le sous-agent VÉRIFICATION de Sylvie. Sans outil, relis les résultats par rapport à l'objectif : signale incohérences et manques, puis conclus par OK ou par les corrections à apporter.",
 }
@@ -114,7 +124,7 @@ def normalize(raw):
 
 
 def is_private(plan):
-    return any(s["type"] == "telephone" or PRIVATE_TOOLS & set(s["tools"]) for s in plan["steps"])
+    return any(s["type"] in PRIVATE_TYPES or PRIVATE_TOOLS & set(s["tools"]) for s in plan["steps"])
 
 
 def plan_lines(plan):
@@ -150,6 +160,7 @@ class PlanIO(engine.IO):
 
     def tool(self, *a): self.io.tool(*a)
     def denied(self, name, args): self.io.denied(name, args)
+    def image(self, d): self.io.image(d)
     def info(self, m): self.io.info(m)
     def ok(self, m): self.io.ok(m)
     def error(self, m): self.io.error(m)
