@@ -1,0 +1,21 @@
+{
+  "_doc": "Fournisseurs d'IA, essayés dans l'ordre. roles : chat (conversation + outils), fast (tâches secondaires sur données publiques), search (recherche Google intégrée, Gemini seulement), audio (transcription, Gemini seulement). trust : private = peut recevoir tes données privées (SMS, contacts, position, mémoire) ; public = seulement des requêtes anodines. daily_calls : budget d'appels par jour (0 = illimité). Une clé absente ou un modèle vide désactive le fournisseur. Tes réglages vont dans providers.local.json (jamais écrasé).",
+  "providers": [
+    {"id": "gemini-flash", "kind": "gemini", "model": "gemini-3.6-flash", "env": "GEMINI_API_KEY",
+     "roles": ["chat", "fast", "search", "audio"], "trust": "private"},
+    {"id": "gemini-lite", "kind": "gemini", "model": "gemini-3.5-flash-lite", "env": "GEMINI_API_KEY",
+     "roles": ["chat", "fast", "search"], "trust": "private"},
+    {"id": "groq", "kind": "openai", "base_url": "https://api.groq.com/openai/v1", "model": "", "env": "GROQ_API_KEY",
+     "roles": ["fast", "chat"], "trust": "public"},
+    {"id": "openrouter", "kind": "openai", "base_url": "https://openrouter.ai/api/v1", "model": "", "env": "OPENROUTER_API_KEY",
+     "roles": ["fast", "chat"], "trust": "public"},
+    {"id": "mistral", "kind": "openai", "base_url": "https://api.mistral.ai/v1", "model": "", "env": "MISTRAL_API_KEY",
+     "roles": ["fast", "chat"], "trust": "public"},
+    {"id": "cerebras", "kind": "openai", "base_url": "https://api.cerebras.ai/v1", "model": "", "env": "CEREBRAS_API_KEY",
+     "roles": ["fast", "chat"], "trust": "public"},
+    {"id": "nvidia", "kind": "openai", "base_url": "https://integrate.api.nvidia.com/v1", "model": "", "env": "NVIDIA_API_KEY",
+     "roles": ["fast", "chat"], "trust": "public"},
+    {"id": "github-models", "kind": "openai", "base_url": "https://models.github.ai/inference", "model": "", "env": "GITHUB_MODELS_TOKEN",
+     "roles": ["fast", "chat"], "trust": "public"}
+  ]
+}

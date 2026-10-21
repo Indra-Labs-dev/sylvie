@@ -1,0 +1,1874 @@
+{
+ "version": 1,
+ "apis": [
+  {
+   "name": "meteo",
+   "category": "Météo",
+   "desc": "Météo actuelle + prévisions 3 jours (weather_code = code WMO : 0 dégagé, 61 pluie, 95 orage)",
+   "keywords": [
+    "météo",
+    "meteo",
+    "temps",
+    "pluie",
+    "température",
+    "chaleur",
+    "vent",
+    "prévision",
+    "orage",
+    "soleil",
+    "climat"
+   ],
+   "source": "catalogue:Open-Meteo",
+   "url": "https://api.open-meteo.com/v1/forecast",
+   "params": {
+    "latitude": {
+     "type": "number",
+     "desc": "latitude en degrés",
+     "min": -90,
+     "max": 90
+    },
+    "longitude": {
+     "type": "number",
+     "desc": "longitude en degrés",
+     "min": -180,
+     "max": 180
+    }
+   },
+   "fixed": {
+    "current": "temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m",
+    "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+    "timezone": "auto",
+    "forecast_days": 3
+   },
+   "extract": [
+    "current",
+    "daily"
+   ],
+   "example": {
+    "latitude": 5.36,
+    "longitude": -4.0
+   },
+   "taints": false
+  },
+  {
+   "name": "geocode_ville",
+   "category": "Météo",
+   "desc": "Coordonnées (latitude, longitude) d'une ville : à utiliser avant meteo, qualite_air, lieux_proches",
+   "keywords": [
+    "ville",
+    "coordonnées",
+    "gps",
+    "latitude",
+    "longitude",
+    "localiser",
+    "où",
+    "situer"
+   ],
+   "source": "catalogue:Open-Meteo",
+   "url": "https://geocoding-api.open-meteo.com/v1/search",
+   "params": {
+    "name": {
+     "type": "string",
+     "desc": "nom de la ville"
+    }
+   },
+   "fixed": {
+    "count": 3,
+    "language": "fr",
+    "format": "json"
+   },
+   "extract": "results[]|name,admin1,country,latitude,longitude,timezone,population",
+   "example": {
+    "name": "Abidjan"
+   },
+   "taints": false
+  },
+  {
+   "name": "qualite_air",
+   "category": "Météo",
+   "desc": "Qualité de l'air actuelle (indice européen AQI, PM2.5, PM10, ozone)",
+   "keywords": [
+    "air",
+    "pollution",
+    "qualité",
+    "pm2",
+    "particules",
+    "smog",
+    "respirer"
+   ],
+   "source": "catalogue:Open-Meteo",
+   "url": "https://air-quality-api.open-meteo.com/v1/air-quality",
+   "params": {
+    "latitude": {
+     "type": "number",
+     "desc": "latitude en degrés",
+     "min": -90,
+     "max": 90
+    },
+    "longitude": {
+     "type": "number",
+     "desc": "longitude en degrés",
+     "min": -180,
+     "max": 180
+    }
+   },
+   "fixed": {
+    "current": "european_aqi,pm10,pm2_5,ozone,nitrogen_dioxide",
+    "timezone": "auto"
+   },
+   "extract": "current",
+   "example": {
+    "latitude": 5.36,
+    "longitude": -4.0
+   },
+   "taints": false
+  },
+  {
+   "name": "altitude",
+   "category": "Météo",
+   "desc": "Altitude d'un point en mètres",
+   "keywords": [
+    "altitude",
+    "élévation",
+    "hauteur",
+    "mètres"
+   ],
+   "source": "catalogue:Open-Meteo",
+   "url": "https://api.open-meteo.com/v1/elevation",
+   "params": {
+    "latitude": {
+     "type": "number",
+     "desc": "latitude en degrés",
+     "min": -90,
+     "max": 90
+    },
+    "longitude": {
+     "type": "number",
+     "desc": "longitude en degrés",
+     "min": -180,
+     "max": 180
+    }
+   },
+   "extract": "elevation",
+   "example": {
+    "latitude": 5.36,
+    "longitude": -4.0
+   },
+   "taints": false
+  },
+  {
+   "name": "meteo_historique",
+   "category": "Météo",
+   "desc": "Météo passée jour par jour (températures, pluie)",
+   "keywords": [
+    "historique",
+    "passé",
+    "hier",
+    "météo",
+    "pluie",
+    "précédente",
+    "archive"
+   ],
+   "source": "catalogue:Open-Meteo",
+   "url": "https://archive-api.open-meteo.com/v1/archive",
+   "params": {
+    "latitude": {
+     "type": "number",
+     "desc": "latitude en degrés",
+     "min": -90,
+     "max": 90
+    },
+    "longitude": {
+     "type": "number",
+     "desc": "longitude en degrés",
+     "min": -180,
+     "max": 180
+    },
+    "start_date": {
+     "type": "string",
+     "desc": "AAAA-MM-JJ",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "end_date": {
+     "type": "string",
+     "desc": "AAAA-MM-JJ",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    }
+   },
+   "fixed": {
+    "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
+    "timezone": "auto"
+   },
+   "extract": "daily",
+   "example": {
+    "latitude": 5.36,
+    "longitude": -4.0,
+    "start_date": "2026-10-01",
+    "end_date": "2026-10-03"
+   },
+   "taints": false
+  },
+  {
+   "name": "soleil",
+   "category": "Météo",
+   "desc": "Heures de lever et coucher du soleil (UTC, ISO 8601)",
+   "keywords": [
+    "lever",
+    "coucher",
+    "soleil",
+    "aube",
+    "crépuscule",
+    "nuit",
+    "jour"
+   ],
+   "source": "catalogue:Sunrise and Sunset",
+   "url": "https://api.sunrise-sunset.org/json",
+   "params": {
+    "lat": {
+     "type": "number",
+     "desc": "latitude",
+     "min": -90,
+     "max": 90
+    },
+    "lng": {
+     "type": "number",
+     "desc": "longitude",
+     "min": -180,
+     "max": 180
+    }
+   },
+   "fixed": {
+    "formatted": 0
+   },
+   "extract": "results",
+   "example": {
+    "lat": 5.36,
+    "lng": -4.0
+   },
+   "taints": false
+  },
+  {
+   "name": "seismes",
+   "category": "Science",
+   "desc": "Derniers séismes dans le monde (magnitude, lieu)",
+   "keywords": [
+    "séisme",
+    "tremblement",
+    "terre",
+    "magnitude",
+    "sismique"
+   ],
+   "source": "catalogue:USGS Earthquake Hazards Program",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query",
+   "params": {
+    "minmagnitude": {
+     "type": "number",
+     "desc": "magnitude minimale",
+     "default": 4.5,
+     "min": 0,
+     "max": 10
+    },
+    "limit": {
+     "type": "integer",
+     "desc": "nombre de résultats",
+     "default": 5,
+     "min": 1,
+     "max": 10
+    }
+   },
+   "fixed": {
+    "format": "geojson",
+    "orderby": "time"
+   },
+   "extract": "features[]|properties.mag,properties.place,properties.time,properties.url",
+   "example": {},
+   "taints": false
+  },
+  {
+   "name": "fuseau_horaire",
+   "category": "Temps",
+   "desc": "Heure actuelle dans un fuseau (ex Europe/Paris, Asia/Tokyo, America/New_York)",
+   "keywords": [
+    "heure",
+    "fuseau",
+    "décalage",
+    "horaire",
+    "pays",
+    "ville",
+    "quelle",
+    "heure"
+   ],
+   "source": "catalogue:Timezone WorldTime",
+   "url": "https://worldtimeapi.org/api/timezone/{zone}",
+   "params": {
+    "zone": {
+     "type": "string",
+     "desc": "fuseau IANA",
+     "pattern": "^[A-Za-z_]+(/[A-Za-z_\\-]+){0,2}$"
+    }
+   },
+   "extract": [
+    "datetime",
+    "timezone",
+    "utc_offset",
+    "abbreviation"
+   ],
+   "example": {
+    "zone": "Europe/Paris"
+   },
+   "taints": false
+  },
+  {
+   "name": "jours_feries",
+   "category": "Temps",
+   "desc": "Jours fériés d'un pays pour une année (code pays ISO, CI = Côte d'Ivoire)",
+   "keywords": [
+    "férié",
+    "fériés",
+    "vacances",
+    "congé",
+    "holiday",
+    "jour",
+    "chômé"
+   ],
+   "source": "catalogue:Nager.Date",
+   "url": "https://date.nager.at/api/v3/PublicHolidays/{year}/{country}",
+   "params": {
+    "year": {
+     "type": "integer",
+     "desc": "année",
+     "min": 1990,
+     "max": 2100
+    },
+    "country": {
+     "type": "string",
+     "desc": "code pays ISO 2 lettres",
+     "default": "CI",
+     "pattern": "^[A-Z]{2}$"
+    }
+   },
+   "extract": "[]|date,localName,name",
+   "example": {
+    "year": 2026
+   },
+   "taints": false
+  },
+  {
+   "name": "pays",
+   "category": "Lieux",
+   "desc": "Infos sur un pays : capitale, population, devises, langues, indicatif téléphonique",
+   "keywords": [
+    "pays",
+    "capitale",
+    "population",
+    "indicatif",
+    "devise",
+    "langue",
+    "nation"
+   ],
+   "source": "catalogue:REST Countries",
+   "url": "https://restcountries.com/v3.1/name/{name}",
+   "params": {
+    "name": {
+     "type": "string",
+     "desc": "nom du pays (français ou anglais)"
+    }
+   },
+   "fixed": {
+    "fields": "name,capital,population,region,subregion,currencies,languages,idd,timezones"
+   },
+   "extract": "[]|name.common,capital,population,region,subregion,currencies,languages,idd,timezones",
+   "example": {
+    "name": "Côte d'Ivoire"
+   },
+   "post": {
+    "limit": 2
+   },
+   "taints": false
+  },
+  {
+   "name": "nominatim_recherche",
+   "category": "Lieux",
+   "desc": "Trouve un lieu ou une adresse (coordonnées, type) via OpenStreetMap",
+   "keywords": [
+    "adresse",
+    "lieu",
+    "trouver",
+    "carte",
+    "rue",
+    "quartier",
+    "endroit",
+    "situer"
+   ],
+   "source": "catalogue:Nominatim",
+   "url": "https://nominatim.openstreetmap.org/search",
+   "params": {
+    "q": {
+     "type": "string",
+     "desc": "adresse ou lieu"
+    }
+   },
+   "fixed": {
+    "format": "jsonv2",
+    "limit": 3,
+    "accept-language": "fr"
+   },
+   "extract": "[]|display_name,lat,lon,type",
+   "example": {
+    "q": "Plateau, Abidjan"
+   },
+   "min_interval": 1.1,
+   "taints": true
+  },
+  {
+   "name": "nominatim_inverse",
+   "category": "Lieux",
+   "desc": "Adresse ou quartier à partir de coordonnées",
+   "keywords": [
+    "adresse",
+    "coordonnées",
+    "quartier",
+    "où",
+    "suis-je"
+   ],
+   "source": "catalogue:Nominatim",
+   "url": "https://nominatim.openstreetmap.org/reverse",
+   "params": {
+    "lat": {
+     "type": "number",
+     "desc": "latitude",
+     "min": -90,
+     "max": 90
+    },
+    "lon": {
+     "type": "number",
+     "desc": "longitude",
+     "min": -180,
+     "max": 180
+    }
+   },
+   "fixed": {
+    "format": "jsonv2",
+    "zoom": 17,
+    "accept-language": "fr"
+   },
+   "extract": [
+    "display_name",
+    "address"
+   ],
+   "example": {
+    "lat": 5.36,
+    "lon": -4.0
+   },
+   "min_interval": 1.1,
+   "taints": true
+  },
+  {
+   "name": "lieux_proches",
+   "category": "Lieux",
+   "desc": "Lieux proches (OpenStreetMap) : type = restaurant, fast_food, cafe, pharmacy, atm, bank, fuel, hospital, marketplace, bar",
+   "keywords": [
+    "près",
+    "proche",
+    "autour",
+    "restaurant",
+    "pharmacie",
+    "distributeur",
+    "banque",
+    "station",
+    "essence",
+    "hôpital",
+    "manger",
+    "faim",
+    "garba",
+    "maquis",
+    "café"
+   ],
+   "source": "hors-catalogue (OpenStreetMap Overpass)",
+   "url": "https://overpass-api.de/api/interpreter",
+   "params": {
+    "latitude": {
+     "type": "number",
+     "desc": "latitude",
+     "min": -90,
+     "max": 90,
+     "in": "body"
+    },
+    "longitude": {
+     "type": "number",
+     "desc": "longitude",
+     "min": -180,
+     "max": 180,
+     "in": "body"
+    },
+    "type": {
+     "type": "string",
+     "desc": "type de lieu (valeur amenity)",
+     "pattern": "^[a-z_]{3,30}$",
+     "in": "body"
+    },
+    "radius": {
+     "type": "integer",
+     "desc": "rayon en mètres",
+     "default": 1000,
+     "min": 100,
+     "max": 5000,
+     "in": "body"
+    }
+   },
+   "extract": "elements[]|tags.name,tags.cuisine,tags.opening_hours,tags.phone,lat,lon,center.lat,center.lon",
+   "example": {
+    "latitude": 5.36,
+    "longitude": -4.0,
+    "type": "restaurant"
+   },
+   "method": "POST",
+   "form": {
+    "data": "[out:json][timeout:20];nwr(around:{radius},{latitude},{longitude})[amenity={type}];out center 12;"
+   },
+   "timeout": 30,
+   "taints": true
+  },
+  {
+   "name": "change_ecb",
+   "category": "Finance",
+   "desc": "Taux de change officiels BCE (pas de XOF/FCFA : utiliser change_monde). Paramètres : base, symbols (ex USD,GBP)",
+   "keywords": [
+    "change",
+    "taux",
+    "devise",
+    "euro",
+    "dollar",
+    "monnaie",
+    "conversion"
+   ],
+   "source": "catalogue:Frankfurter",
+   "url": "https://api.frankfurter.dev/v1/latest",
+   "params": {
+    "base": {
+     "type": "string",
+     "desc": "devise de base",
+     "default": "EUR",
+     "pattern": "^[A-Z]{3}$"
+    },
+    "symbols": {
+     "type": "string",
+     "desc": "devises voulues séparées par des virgules",
+     "optional": true,
+     "pattern": "^[A-Z]{3}(,[A-Z]{3}){0,15}$"
+    }
+   },
+   "extract": [
+    "base",
+    "date",
+    "rates"
+   ],
+   "example": {
+    "symbols": "USD"
+   },
+   "taints": false
+  },
+  {
+   "name": "change_monde",
+   "category": "Finance",
+   "desc": "Taux de change (160 devises dont XOF = FCFA ; 1 EUR = 655,957 XOF fixe). symbols filtre les devises",
+   "keywords": [
+    "change",
+    "taux",
+    "devise",
+    "fcfa",
+    "xof",
+    "franc",
+    "cfa",
+    "dollar",
+    "euro",
+    "monnaie",
+    "conversion"
+   ],
+   "source": "hors-catalogue (ExchangeRate-API open access)",
+   "url": "https://open.er-api.com/v6/latest/{base}",
+   "params": {
+    "base": {
+     "type": "string",
+     "desc": "devise de base",
+     "default": "EUR",
+     "pattern": "^[A-Z]{3}$"
+    },
+    "symbols": {
+     "type": "string",
+     "desc": "devises voulues, ex XOF,USD",
+     "default": "XOF,USD,EUR",
+     "pattern": "^[A-Z]{3}(,[A-Z]{3}){0,15}$"
+    }
+   },
+   "extract": [
+    "base_code",
+    "time_last_update_utc",
+    "rates"
+   ],
+   "example": {
+    "base": "USD",
+    "symbols": "XOF,EUR"
+   },
+   "post": {
+    "filter_keys": {
+     "path": "rates",
+     "param": "symbols"
+    }
+   },
+   "taints": false
+  },
+  {
+   "name": "change_historique",
+   "category": "Finance",
+   "desc": "Taux de change BCE à une date passée",
+   "keywords": [
+    "change",
+    "historique",
+    "taux",
+    "passé",
+    "devise",
+    "date"
+   ],
+   "source": "catalogue:Frankfurter",
+   "url": "https://api.frankfurter.dev/v1/{date}",
+   "params": {
+    "date": {
+     "type": "string",
+     "desc": "AAAA-MM-JJ",
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "base": {
+     "type": "string",
+     "desc": "devise de base",
+     "default": "EUR",
+     "pattern": "^[A-Z]{3}$"
+    },
+    "symbols": {
+     "type": "string",
+     "desc": "devises voulues",
+     "optional": true,
+     "pattern": "^[A-Z]{3}(,[A-Z]{3}){0,15}$"
+    }
+   },
+   "extract": [
+    "base",
+    "date",
+    "rates"
+   ],
+   "example": {
+    "date": "2025-01-02",
+    "symbols": "USD"
+   },
+   "taints": false
+  },
+  {
+   "name": "crypto_prix",
+   "category": "Finance",
+   "desc": "Prix de cryptomonnaies (ids CoinGecko : bitcoin, ethereum, solana, tether...)",
+   "keywords": [
+    "crypto",
+    "bitcoin",
+    "ethereum",
+    "prix",
+    "cours",
+    "monnaie",
+    "btc"
+   ],
+   "source": "catalogue:CoinGecko",
+   "url": "https://api.coingecko.com/api/v3/simple/price",
+   "params": {
+    "ids": {
+     "type": "string",
+     "desc": "ids séparés par des virgules",
+     "pattern": "^[a-z0-9\\-]{1,40}(,[a-z0-9\\-]{1,40}){0,9}$"
+    },
+    "vs_currencies": {
+     "type": "string",
+     "desc": "devises",
+     "default": "usd,eur",
+     "pattern": "^[a-z]{3,5}(,[a-z]{3,5}){0,5}$"
+    }
+   },
+   "fixed": {
+    "include_24hr_change": "true"
+   },
+   "example": {
+    "ids": "bitcoin"
+   },
+   "taints": false
+  },
+  {
+   "name": "crypto_tendances",
+   "category": "Finance",
+   "desc": "Cryptomonnaies tendance du moment",
+   "keywords": [
+    "crypto",
+    "tendance",
+    "populaire",
+    "trending"
+   ],
+   "source": "catalogue:CoinGecko",
+   "url": "https://api.coingecko.com/api/v3/search/trending",
+   "params": {},
+   "extract": "coins[]|item.name,item.symbol,item.market_cap_rank",
+   "example": {},
+   "taints": false
+  },
+  {
+   "name": "crypto_paprika",
+   "category": "Finance",
+   "desc": "Fiche d'une cryptomonnaie (id Coinpaprika : btc-bitcoin, eth-ethereum)",
+   "keywords": [
+    "crypto",
+    "fiche",
+    "classement",
+    "capitalisation"
+   ],
+   "source": "catalogue:Coinpaprika",
+   "url": "https://api.coinpaprika.com/v1/tickers/{coin_id}",
+   "params": {
+    "coin_id": {
+     "type": "string",
+     "desc": "ex btc-bitcoin",
+     "pattern": "^[a-z0-9\\-]{3,50}$"
+    }
+   },
+   "extract": [
+    "name",
+    "symbol",
+    "rank",
+    "quotes"
+   ],
+   "example": {
+    "coin_id": "btc-bitcoin"
+   },
+   "taints": false
+  },
+  {
+   "name": "wikipedia",
+   "category": "Savoir",
+   "desc": "Résumé d'un article Wikipédia (titre exact ; lang fr par défaut)",
+   "keywords": [
+    "wikipedia",
+    "définition",
+    "qui",
+    "est",
+    "qu'est-ce",
+    "encyclopédie",
+    "biographie",
+    "histoire"
+   ],
+   "source": "catalogue:Wikipedia",
+   "url": "https://{lang}.wikipedia.org/api/rest_v1/page/summary/{title}",
+   "params": {
+    "title": {
+     "type": "string",
+     "desc": "titre de l'article"
+    },
+    "lang": {
+     "type": "string",
+     "desc": "code langue",
+     "default": "fr",
+     "pattern": "^[a-z]{2,3}$"
+    }
+   },
+   "extract": [
+    "title",
+    "description",
+    "extract",
+    "content_urls.desktop.page"
+   ],
+   "example": {
+    "title": "Abidjan"
+   },
+   "taints": true
+  },
+  {
+   "name": "wikipedia_recherche",
+   "category": "Savoir",
+   "desc": "Cherche des articles Wikipédia (pour trouver le bon titre)",
+   "keywords": [
+    "wikipedia",
+    "chercher",
+    "article",
+    "recherche",
+    "encyclopédie"
+   ],
+   "source": "catalogue:Wikipedia",
+   "url": "https://{lang}.wikipedia.org/w/rest.php/v1/search/page",
+   "params": {
+    "q": {
+     "type": "string",
+     "desc": "mots-clés"
+    },
+    "lang": {
+     "type": "string",
+     "desc": "code langue",
+     "default": "fr",
+     "pattern": "^[a-z]{2,3}$"
+    }
+   },
+   "fixed": {
+    "limit": 5
+   },
+   "extract": "pages[]|title,description,excerpt",
+   "example": {
+    "q": "Côte d'Ivoire"
+   },
+   "post": {
+    "strip_html": true
+   },
+   "taints": true
+  },
+  {
+   "name": "definition_en",
+   "category": "Savoir",
+   "desc": "Définition d'un mot ANGLAIS (dictionnaire)",
+   "keywords": [
+    "définition",
+    "dictionnaire",
+    "mot",
+    "anglais",
+    "signifie",
+    "sens"
+   ],
+   "source": "catalogue:Free Dictionary",
+   "url": "https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
+   "params": {
+    "word": {
+     "type": "string",
+     "desc": "mot anglais",
+     "pattern": "^[A-Za-z\\-' ]{1,40}$"
+    }
+   },
+   "extract": "[]|word,phonetic,meanings",
+   "example": {
+    "word": "resilience"
+   },
+   "post": {
+    "limit": 1
+   },
+   "max_chars": 1500,
+   "taints": true
+  },
+  {
+   "name": "livres",
+   "category": "Savoir",
+   "desc": "Recherche de livres (titre, auteurs, année) via Open Library",
+   "keywords": [
+    "livre",
+    "roman",
+    "auteur",
+    "lecture",
+    "bibliothèque"
+   ],
+   "source": "catalogue:Open Library",
+   "url": "https://openlibrary.org/search.json",
+   "params": {
+    "q": {
+     "type": "string",
+     "desc": "titre, auteur ou sujet"
+    }
+   },
+   "fixed": {
+    "limit": 5,
+    "fields": "title,author_name,first_publish_year"
+   },
+   "extract": "docs[]|title,author_name,first_publish_year",
+   "example": {
+    "q": "cybersécurité"
+   },
+   "taints": true
+  },
+  {
+   "name": "articles_crossref",
+   "category": "Savoir",
+   "desc": "Articles scientifiques (titre, DOI, année) via Crossref",
+   "keywords": [
+    "article",
+    "scientifique",
+    "recherche",
+    "publication",
+    "doi",
+    "étude",
+    "papier"
+   ],
+   "source": "catalogue:Crossref Metadata Search",
+   "url": "https://api.crossref.org/works",
+   "params": {
+    "query": {
+     "type": "string",
+     "desc": "sujet"
+    }
+   },
+   "fixed": {
+    "rows": 4,
+    "select": "title,DOI,issued,container-title"
+   },
+   "extract": "message.items[]|title,DOI,issued,container-title",
+   "example": {
+    "query": "zero trust architecture"
+   },
+   "taints": true
+  },
+  {
+   "name": "articles_openalex",
+   "category": "Savoir",
+   "desc": "Travaux scientifiques les plus cités sur un sujet (OpenAlex)",
+   "keywords": [
+    "article",
+    "scientifique",
+    "recherche",
+    "publication",
+    "cité",
+    "étude",
+    "papier"
+   ],
+   "source": "catalogue:OpenAlex",
+   "url": "https://api.openalex.org/works",
+   "params": {
+    "search": {
+     "type": "string",
+     "desc": "sujet"
+    }
+   },
+   "fixed": {
+    "per-page": 4,
+    "select": "title,publication_year,doi,cited_by_count"
+   },
+   "extract": "results[]|title,publication_year,doi,cited_by_count",
+   "example": {
+    "search": "intrusion detection"
+   },
+   "taints": true
+  },
+  {
+   "name": "aliments",
+   "category": "Savoir",
+   "desc": "Infos nutritionnelles d'un produit alimentaire (Open Food Facts)",
+   "keywords": [
+    "aliment",
+    "nourriture",
+    "calories",
+    "nutrition",
+    "sucre",
+    "produit",
+    "manger",
+    "santé"
+   ],
+   "source": "catalogue:Open Food Facts",
+   "url": "https://world.openfoodfacts.org/cgi/search.pl",
+   "params": {
+    "search_terms": {
+     "type": "string",
+     "desc": "nom du produit"
+    }
+   },
+   "fixed": {
+    "search_simple": 1,
+    "action": "process",
+    "json": 1,
+    "page_size": 3,
+    "fields": "product_name,brands,nutriscore_grade,nutriments"
+   },
+   "extract": "products[]|product_name,brands,nutriscore_grade,nutriments.energy-kcal_100g,nutriments.sugars_100g,nutriments.fat_100g,nutriments.proteins_100g",
+   "example": {
+    "search_terms": "nutella"
+   },
+   "taints": true
+  },
+  {
+   "name": "blague",
+   "category": "Divers",
+   "desc": "Une blague en français",
+   "keywords": [
+    "blague",
+    "drôle",
+    "rire",
+    "humour"
+   ],
+   "source": "catalogue:JokeAPI",
+   "url": "https://v2.jokeapi.dev/joke/Any",
+   "params": {},
+   "fixed": {
+    "lang": "fr",
+    "blacklistFlags": "nsfw,religious,political,racist,sexist,explicit"
+   },
+   "extract": [
+    "type",
+    "setup",
+    "delivery",
+    "joke"
+   ],
+   "example": {},
+   "taints": true
+  },
+  {
+   "name": "quiz",
+   "category": "Divers",
+   "desc": "Questions de culture générale (en anglais)",
+   "keywords": [
+    "quiz",
+    "question",
+    "culture",
+    "générale",
+    "trivia",
+    "jeu"
+   ],
+   "source": "catalogue:Open Trivia",
+   "url": "https://opentdb.com/api.php",
+   "params": {
+    "amount": {
+     "type": "integer",
+     "desc": "nombre de questions",
+     "default": 3,
+     "min": 1,
+     "max": 10
+    }
+   },
+   "fixed": {
+    "type": "multiple"
+   },
+   "extract": "results[]|category,difficulty,question,correct_answer,incorrect_answers",
+   "example": {
+    "amount": 1
+   },
+   "post": {
+    "unescape": true
+   },
+   "taints": true
+  },
+  {
+   "name": "musique",
+   "category": "Divers",
+   "desc": "Cherche des morceaux (artiste, titre, lien, extrait audio) via iTunes",
+   "keywords": [
+    "musique",
+    "chanson",
+    "artiste",
+    "titre",
+    "écouter",
+    "album",
+    "son"
+   ],
+   "source": "catalogue:iTunes Search",
+   "url": "https://itunes.apple.com/search",
+   "params": {
+    "term": {
+     "type": "string",
+     "desc": "artiste ou titre"
+    },
+    "country": {
+     "type": "string",
+     "desc": "pays de la boutique",
+     "default": "FR",
+     "pattern": "^[A-Z]{2}$"
+    }
+   },
+   "fixed": {
+    "media": "music",
+    "entity": "song",
+    "limit": 5
+   },
+   "extract": "results[]|trackName,artistName,collectionName,trackViewUrl,previewUrl",
+   "example": {
+    "term": "Magic System"
+   },
+   "taints": true
+  },
+  {
+   "name": "hackernews",
+   "category": "Dev",
+   "desc": "Recherche d'articles Hacker News (tech, sécurité, startups)",
+   "keywords": [
+    "hackernews",
+    "tech",
+    "actualité",
+    "développeur",
+    "startup",
+    "discussion"
+   ],
+   "source": "hors-catalogue (HN Algolia, sur la base de HackerNews)",
+   "url": "https://hn.algolia.com/api/v1/search",
+   "params": {
+    "query": {
+     "type": "string",
+     "desc": "mots-clés"
+    }
+   },
+   "fixed": {
+    "tags": "story",
+    "hitsPerPage": 5
+   },
+   "extract": "hits[]|title,url,points,created_at",
+   "example": {
+    "query": "wazuh"
+   },
+   "taints": true
+  },
+  {
+   "name": "github_repos",
+   "category": "Dev",
+   "desc": "Recherche de dépôts GitHub (étoiles, description). GITHUB_TOKEN optionnel pour de meilleures limites",
+   "keywords": [
+    "github",
+    "dépôt",
+    "repo",
+    "projet",
+    "code",
+    "open",
+    "source",
+    "bibliothèque",
+    "outil"
+   ],
+   "source": "catalogue:GitHub (lecture publique)",
+   "url": "https://api.github.com/search/repositories",
+   "params": {
+    "q": {
+     "type": "string",
+     "desc": "mots-clés de recherche GitHub"
+    }
+   },
+   "fixed": {
+    "per_page": 5,
+    "sort": "stars"
+   },
+   "extract": "items[]|full_name,description,stargazers_count,html_url",
+   "example": {
+    "q": "wazuh dashboard"
+   },
+   "headers": {
+    "Accept": "application/vnd.github+json"
+   },
+   "env_key": "GITHUB_TOKEN",
+   "taints": true
+  },
+  {
+   "name": "github_utilisateur",
+   "category": "Dev",
+   "desc": "Profil public d'un utilisateur GitHub",
+   "keywords": [
+    "github",
+    "profil",
+    "utilisateur",
+    "compte",
+    "développeur"
+   ],
+   "source": "catalogue:GitHub (lecture publique)",
+   "url": "https://api.github.com/users/{user}",
+   "params": {
+    "user": {
+     "type": "string",
+     "desc": "identifiant GitHub",
+     "pattern": "^[A-Za-z0-9\\-]{1,39}$"
+    }
+   },
+   "extract": [
+    "login",
+    "name",
+    "bio",
+    "public_repos",
+    "followers",
+    "html_url"
+   ],
+   "example": {
+    "user": "Indra-Labs-dev"
+   },
+   "headers": {
+    "Accept": "application/vnd.github+json"
+   },
+   "env_key": "GITHUB_TOKEN",
+   "taints": true
+  },
+  {
+   "name": "stackoverflow",
+   "category": "Dev",
+   "desc": "Questions Stack Overflow sur un problème technique",
+   "keywords": [
+    "erreur",
+    "bug",
+    "problème",
+    "programmation",
+    "stackoverflow",
+    "solution",
+    "code"
+   ],
+   "source": "catalogue:StackExchange (lecture publique)",
+   "url": "https://api.stackexchange.com/2.3/search/advanced",
+   "params": {
+    "q": {
+     "type": "string",
+     "desc": "problème ou message d'erreur"
+    }
+   },
+   "fixed": {
+    "order": "desc",
+    "sort": "relevance",
+    "site": "stackoverflow",
+    "pagesize": 5
+   },
+   "extract": "items[]|title,link,score,is_answered",
+   "example": {
+    "q": "termux python pip"
+   },
+   "taints": true
+  },
+  {
+   "name": "pypi",
+   "category": "Dev",
+   "desc": "Dernière version et résumé d'un paquet Python (PyPI)",
+   "keywords": [
+    "python",
+    "pip",
+    "paquet",
+    "bibliothèque",
+    "version",
+    "pypi"
+   ],
+   "source": "hors-catalogue (PyPI JSON)",
+   "url": "https://pypi.org/pypi/{package}/json",
+   "params": {
+    "package": {
+     "type": "string",
+     "desc": "nom du paquet",
+     "pattern": "^[A-Za-z0-9._\\-]{1,80}$"
+    }
+   },
+   "extract": "info|name,version,summary,home_page,requires_python",
+   "example": {
+    "package": "requests"
+   },
+   "taints": true
+  },
+  {
+   "name": "npm",
+   "category": "Dev",
+   "desc": "Dernière version d'un paquet npm",
+   "keywords": [
+    "npm",
+    "node",
+    "javascript",
+    "paquet",
+    "version"
+   ],
+   "source": "catalogue:npm Registry",
+   "url": "https://registry.npmjs.org/{package}/latest",
+   "params": {
+    "package": {
+     "type": "string",
+     "desc": "nom du paquet",
+     "pattern": "^[a-z0-9._\\-]{1,80}$"
+    }
+   },
+   "extract": [
+    "name",
+    "version",
+    "description",
+    "license"
+   ],
+   "example": {
+    "package": "express"
+   },
+   "taints": true
+  },
+  {
+   "name": "docker_hub",
+   "category": "Dev",
+   "desc": "Infos sur une image Docker officielle (téléchargements, dernière mise à jour)",
+   "keywords": [
+    "docker",
+    "image",
+    "conteneur",
+    "hub"
+   ],
+   "source": "hors-catalogue (Docker Hub)",
+   "url": "https://hub.docker.com/v2/repositories/library/{image}/",
+   "params": {
+    "image": {
+     "type": "string",
+     "desc": "nom de l'image",
+     "pattern": "^[a-z0-9._\\-]{1,60}$"
+    }
+   },
+   "extract": [
+    "name",
+    "description",
+    "pull_count",
+    "star_count",
+    "last_updated"
+   ],
+   "example": {
+    "image": "nginx"
+   },
+   "taints": true
+  },
+  {
+   "name": "actu_spatiale",
+   "category": "Actualité",
+   "desc": "Dernières actualités spatiales",
+   "keywords": [
+    "espace",
+    "spatial",
+    "fusée",
+    "nasa",
+    "spacex",
+    "satellite",
+    "actualité"
+   ],
+   "source": "catalogue:Spaceflight News",
+   "url": "https://api.spaceflightnewsapi.net/v4/articles",
+   "params": {
+    "limit": {
+     "type": "integer",
+     "desc": "nombre d'articles",
+     "default": 5,
+     "min": 1,
+     "max": 10
+    }
+   },
+   "extract": "results[]|title,url,summary,published_at",
+   "example": {
+    "limit": 2
+   },
+   "taints": true
+  },
+  {
+   "name": "actu_monde",
+   "category": "Actualité",
+   "desc": "Actualité mondiale ou locale (GDELT). Ajoute sourcecountry:IV pour la Côte d'Ivoire",
+   "keywords": [
+    "actualité",
+    "news",
+    "info",
+    "journal",
+    "nouvelles",
+    "presse"
+   ],
+   "source": "hors-catalogue (GDELT)",
+   "url": "https://api.gdeltproject.org/api/v2/doc/doc",
+   "params": {
+    "query": {
+     "type": "string",
+     "desc": "mots-clés, ex: Abidjan sourcecountry:IV"
+    }
+   },
+   "fixed": {
+    "mode": "artlist",
+    "format": "json",
+    "maxrecords": 6,
+    "sort": "datedesc"
+   },
+   "extract": "articles[]|title,url,domain,seendate,sourcecountry,language",
+   "example": {
+    "query": "Abidjan sourcecountry:IV"
+   },
+   "min_interval": 5.5,
+   "taints": true
+  },
+  {
+   "name": "emplois_arbeitnow",
+   "category": "Emploi",
+   "desc": "Offres d'emploi (Europe / télétravail), filtrables par mot-clé",
+   "keywords": [
+    "emploi",
+    "offre",
+    "job",
+    "poste",
+    "recrutement",
+    "travail",
+    "télétravail",
+    "carrière",
+    "cybersécurité",
+    "développeur"
+   ],
+   "source": "catalogue:Arbeitnow",
+   "url": "https://www.arbeitnow.com/api/job-board-api",
+   "params": {
+    "q": {
+     "type": "string",
+     "desc": "mot-clé (titre, entreprise, tags)",
+     "optional": true
+    }
+   },
+   "extract": "data[]|title,company_name,location,remote,url",
+   "example": {
+    "q": "security"
+   },
+   "pre": {
+    "search_list": {
+     "path": "data",
+     "param": "q",
+     "fields": [
+      "title",
+      "company_name",
+      "location",
+      "tags"
+     ],
+     "limit": 8
+    }
+   },
+   "taints": true
+  },
+  {
+   "name": "emplois_remoteok",
+   "category": "Emploi",
+   "desc": "Offres d'emploi en télétravail (RemoteOK), filtrables",
+   "keywords": [
+    "emploi",
+    "offre",
+    "job",
+    "poste",
+    "télétravail",
+    "remote",
+    "carrière",
+    "cybersécurité",
+    "développeur"
+   ],
+   "source": "catalogue:RemoteOK",
+   "url": "https://remoteok.com/api",
+   "params": {
+    "q": {
+     "type": "string",
+     "desc": "mot-clé (poste, tags)",
+     "optional": true
+    }
+   },
+   "extract": "[]|position,company,location,tags,url,salary_min,salary_max",
+   "example": {
+    "q": "security"
+   },
+   "pre": {
+    "search_list": {
+     "path": "",
+     "skip": 1,
+     "param": "q",
+     "fields": [
+      "position",
+      "company",
+      "tags",
+      "location"
+     ],
+     "limit": 8
+    }
+   },
+   "taints": true
+  },
+  {
+   "name": "cve",
+   "category": "Sécurité",
+   "desc": "Détails d'une CVE (description, score CVSS) via NVD",
+   "keywords": [
+    "cve",
+    "vulnérabilité",
+    "faille",
+    "cvss",
+    "nvd",
+    "sécurité",
+    "score"
+   ],
+   "source": "hors-catalogue (NIST NVD)",
+   "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+   "params": {
+    "cveId": {
+     "type": "string",
+     "desc": "identifiant CVE-AAAA-NNNN",
+     "pattern": "^CVE-\\d{4}-\\d{4,7}$"
+    }
+   },
+   "extract": "vulnerabilities[]|cve.id,cve.published,cve.descriptions,cve.metrics.cvssMetricV31,cve.metrics.cvssMetricV40",
+   "example": {
+    "cveId": "CVE-2024-3094"
+   },
+   "min_interval": 6.5,
+   "max_chars": 2500,
+   "taints": true
+  },
+  {
+   "name": "cve_recherche",
+   "category": "Sécurité",
+   "desc": "Cherche des CVE par mot-clé (produit, éditeur)",
+   "keywords": [
+    "cve",
+    "vulnérabilité",
+    "faille",
+    "produit",
+    "recherche",
+    "nvd",
+    "sécurité"
+   ],
+   "source": "hors-catalogue (NIST NVD)",
+   "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+   "params": {
+    "keywordSearch": {
+     "type": "string",
+     "desc": "produit ou mot-clé"
+    }
+   },
+   "fixed": {
+    "resultsPerPage": 4
+   },
+   "extract": "vulnerabilities[]|cve.id,cve.published,cve.descriptions",
+   "example": {
+    "keywordSearch": "fortigate"
+   },
+   "min_interval": 6.5,
+   "max_chars": 2500,
+   "taints": true
+  },
+  {
+   "name": "cisa_kev",
+   "category": "Sécurité",
+   "desc": "Failles activement exploitées (catalogue CISA KEV), récentes ou filtrées par produit",
+   "keywords": [
+    "kev",
+    "exploitée",
+    "faille",
+    "cisa",
+    "vulnérabilité",
+    "patch",
+    "urgent",
+    "actif",
+    "ransomware",
+    "sécurité"
+   ],
+   "source": "hors-catalogue (CISA feed)",
+   "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+   "params": {
+    "q": {
+     "type": "string",
+     "desc": "produit, éditeur ou CVE (vide = les plus récentes)",
+     "optional": true
+    }
+   },
+   "extract": "vulnerabilities[]|cveID,vendorProject,product,vulnerabilityName,dateAdded,knownRansomwareCampaignUse",
+   "example": {
+    "q": "huawei"
+   },
+   "pre": {
+    "search_list": {
+     "path": "vulnerabilities",
+     "param": "q",
+     "fields": [
+      "cveID",
+      "vendorProject",
+      "product",
+      "vulnerabilityName"
+     ],
+     "sort_desc": "dateAdded",
+     "limit": 6
+    }
+   },
+   "cache_seconds": 3600,
+   "timeout": 40,
+   "taints": true
+  },
+  {
+   "name": "epss",
+   "category": "Sécurité",
+   "desc": "Probabilité d'exploitation d'une CVE (score EPSS)",
+   "keywords": [
+    "epss",
+    "probabilité",
+    "exploitation",
+    "cve",
+    "risque",
+    "priorité"
+   ],
+   "source": "hors-catalogue (FIRST EPSS)",
+   "url": "https://api.first.org/data/v1/epss",
+   "params": {
+    "cve": {
+     "type": "string",
+     "desc": "identifiant CVE",
+     "pattern": "^CVE-\\d{4}-\\d{4,7}$"
+    }
+   },
+   "extract": "data[]|cve,epss,percentile,date",
+   "example": {
+    "cve": "CVE-2024-3094"
+   },
+   "taints": false
+  },
+  {
+   "name": "osv",
+   "category": "Sécurité",
+   "desc": "Vulnérabilités connues d'un paquet (OSV) : ecosystem = PyPI, npm, Go, Maven, crates.io",
+   "keywords": [
+    "osv",
+    "vulnérabilité",
+    "paquet",
+    "dépendance",
+    "faille",
+    "bibliothèque",
+    "sécurité"
+   ],
+   "source": "catalogue:OSV",
+   "url": "https://api.osv.dev/v1/query",
+   "params": {
+    "package": {
+     "type": "string",
+     "desc": "nom du paquet",
+     "pattern": "^[A-Za-z0-9@/._+\\-]{1,100}$",
+     "in": "body"
+    },
+    "ecosystem": {
+     "type": "string",
+     "desc": "écosystème",
+     "pattern": "^[A-Za-z0-9.+\\-]{1,30}$",
+     "in": "body"
+    },
+    "version": {
+     "type": "string",
+     "desc": "version précise",
+     "optional": true,
+     "pattern": "^[A-Za-z0-9._+~\\-]{1,40}$",
+     "in": "body"
+    }
+   },
+   "extract": "vulns[]|id,summary,aliases,modified",
+   "example": {
+    "package": "requests",
+    "ecosystem": "PyPI",
+    "version": "2.19.0"
+   },
+   "method": "POST",
+   "body": {
+    "package": {
+     "name": "{package}",
+     "ecosystem": "{ecosystem}"
+    },
+    "version": "{version}"
+   },
+   "post": {
+    "limit": 8
+   },
+   "taints": true
+  },
+  {
+   "name": "ip_menaces",
+   "category": "Sécurité",
+   "desc": "Ports ouverts, noms d'hôte et CVE connues d'une IP publique (Shodan InternetDB)",
+   "keywords": [
+    "ip",
+    "ports",
+    "ouverts",
+    "scan",
+    "shodan",
+    "exposition",
+    "menace",
+    "sécurité"
+   ],
+   "source": "hors-catalogue (Shodan InternetDB)",
+   "url": "https://internetdb.shodan.io/{ip}",
+   "params": {
+    "ip": {
+     "type": "ip",
+     "desc": "adresse IP publique"
+    }
+   },
+   "extract": [
+    "ip",
+    "ports",
+    "hostnames",
+    "tags",
+    "vulns"
+   ],
+   "example": {
+    "ip": "8.8.8.8"
+   },
+   "taints": true
+  },
+  {
+   "name": "ip_localisation",
+   "category": "Sécurité",
+   "desc": "Pays, ville et opérateur (ASN) d'une IP publique",
+   "keywords": [
+    "ip",
+    "localisation",
+    "opérateur",
+    "asn",
+    "pays",
+    "géolocalisation",
+    "fournisseur"
+   ],
+   "source": "catalogue:ipapi.co",
+   "url": "https://ipapi.co/{ip}/json/",
+   "params": {
+    "ip": {
+     "type": "ip",
+     "desc": "adresse IP publique"
+    }
+   },
+   "extract": [
+    "ip",
+    "city",
+    "region",
+    "country_name",
+    "org",
+    "asn",
+    "timezone"
+   ],
+   "example": {
+    "ip": "8.8.8.8"
+   },
+   "taints": false
+  },
+  {
+   "name": "ip_publique",
+   "category": "Sécurité",
+   "desc": "Mon adresse IP publique actuelle",
+   "keywords": [
+    "mon",
+    "ip",
+    "publique",
+    "adresse",
+    "réseau"
+   ],
+   "source": "catalogue:IPify",
+   "url": "https://api.ipify.org",
+   "params": {},
+   "fixed": {
+    "format": "json"
+   },
+   "extract": "ip",
+   "example": {},
+   "taints": false
+  },
+  {
+   "name": "dns",
+   "category": "Sécurité",
+   "desc": "Enregistrements DNS d'un domaine (type A, AAAA, MX, TXT, NS, CNAME)",
+   "keywords": [
+    "dns",
+    "domaine",
+    "enregistrement",
+    "mx",
+    "txt",
+    "résolution",
+    "nom"
+   ],
+   "source": "hors-catalogue (Google Public DNS)",
+   "url": "https://dns.google/resolve",
+   "params": {
+    "name": {
+     "type": "string",
+     "desc": "domaine",
+     "pattern": "^([a-z0-9-]{1,63}\\.)+[a-z]{2,24}$"
+    },
+    "type": {
+     "type": "string",
+     "desc": "type d'enregistrement",
+     "default": "A",
+     "pattern": "^[A-Z]{1,10}$"
+    }
+   },
+   "extract": [
+    "Status",
+    "Answer[]|name,type,TTL,data"
+   ],
+   "example": {
+    "name": "example.com"
+   },
+   "taints": true
+  },
+  {
+   "name": "rdap",
+   "category": "Sécurité",
+   "desc": "Informations d'enregistrement d'un domaine (RDAP / whois) : dates, statut, serveurs de noms",
+   "keywords": [
+    "whois",
+    "rdap",
+    "domaine",
+    "propriétaire",
+    "enregistrement",
+    "expiration",
+    "création"
+   ],
+   "source": "hors-catalogue (RDAP)",
+   "url": "https://rdap.org/domain/{domain}",
+   "params": {
+    "domain": {
+     "type": "string",
+     "desc": "domaine",
+     "pattern": "^([a-z0-9-]{1,63}\\.)+[a-z]{2,24}$"
+    }
+   },
+   "extract": [
+    "ldhName",
+    "status",
+    "events",
+    "nameservers"
+   ],
+   "example": {
+    "domain": "example.com"
+   },
+   "max_chars": 1500,
+   "any_redirect": true,
+   "taints": true
+  },
+  {
+   "name": "certificats",
+   "category": "Sécurité",
+   "desc": "Certificats TLS émis pour un domaine (sous-domaines connus, crt.sh). q = %.exemple.com",
+   "keywords": [
+    "certificat",
+    "tls",
+    "ssl",
+    "sous-domaine",
+    "crt",
+    "transparence"
+   ],
+   "source": "hors-catalogue (crt.sh)",
+   "url": "https://crt.sh/",
+   "params": {
+    "q": {
+     "type": "string",
+     "desc": "domaine, ex %.example.com",
+     "pattern": "^(%\\.)?([a-z0-9-]+\\.)+[a-z]{2,24}$"
+    }
+   },
+   "fixed": {
+    "output": "json"
+   },
+   "extract": "[]|name_value,issuer_name,not_before,not_after",
+   "example": {
+    "q": "%.example.com"
+   },
+   "post": {
+    "dedupe": "name_value",
+    "limit": 15
+   },
+   "timeout": 40,
+   "taints": true
+  },
+  {
+   "name": "fuites_domaine",
+   "category": "Sécurité",
+   "desc": "Fuites de données publiques connues impliquant un domaine (HaveIBeenPwned, liste des fuites)",
+   "keywords": [
+    "fuite",
+    "données",
+    "breach",
+    "pwned",
+    "piratage",
+    "domaine",
+    "compromis"
+   ],
+   "source": "catalogue:HaveIBeenPwned (liste publique des fuites)",
+   "url": "https://haveibeenpwned.com/api/v3/breaches",
+   "params": {
+    "domain": {
+     "type": "string",
+     "desc": "domaine",
+     "pattern": "^([a-z0-9-]{1,63}\\.)+[a-z]{2,24}$"
+    }
+   },
+   "extract": "[]|Name,Title,BreachDate,PwnCount,DataClasses",
+   "example": {
+    "domain": "adobe.com"
+   },
+   "taints": true
+  }
+ ]
+}

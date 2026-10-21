@@ -5,3 +5,5 @@ __pycache__/
 .voice.*
 sylvie.db
 sylvie.db-*
+providers.local.json
+apis.local.json
