@@ -572,8 +572,8 @@ def main():
         pass
     finally:
         for cmd in (["termux-notification-remove", "sylvie-live"], ["termux-wake-unlock"]):
-            with contextlib.suppress(Exception):
-                tools.termux(*cmd, timeout=5)
+            with contextlib.suppress(Exception, KeyboardInterrupt):
+                tools.termux(*cmd, timeout=3)
     return 0
 
 
