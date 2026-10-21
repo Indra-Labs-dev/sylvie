@@ -1,7 +1,7 @@
 """Sylvie — agent IA personnel sur Termux. Lancer : . ./.env && python agent.py"""
 import base64, json, os, sys, threading
 
-import agenda, apis, backup, camera, diagnostic, engine, files, gate, history, llm, memory, planner, router, scheduler, tools, ui, voice  # noqa: F401
+import agenda, apis, backup, camera, diagnostic, engine, files, gate, habits, history, llm, memory, planner, router, rules, scheduler, tools, ui, voice  # noqa: F401
 from fast import fast_path
 
 STT = os.environ.get("SYLVIE_STT", "gemini")  # gemini (enregistre + transcrit) | android
@@ -25,6 +25,8 @@ HELP = [
     ("/briefing HH:MM", "briefing du matin chaque jour à cette heure"),
     ("/attente", "actions que des tâches automatiques attendent de toi"),
     ("/agenda [jours]", "événements à venir de l'agenda de Sylvie"),
+    ("/regles", "règles permanentes : autoriser d'avance un genre d'action (voir « /regles aide »)"),
+    ("/habitudes", "demandes que tu répètes ; « /habitudes effacer » supprime l'historique"),
     ("/diagnostic", "vérifie permissions, outils, clés, réseau et dit quoi corriger"),
     ("/quotas", "appels du jour par fournisseur d'IA et par API"),
     ("/sauvegarde", "sauvegarde la mémoire, l'agenda et les tâches (7 dernières gardées)"),
@@ -124,8 +126,9 @@ def command(q, contents):
         facts = memory.all_facts(200)
         if not facts:
             ui.info("Mémoire vide. Dis-moi par exemple : « retiens que je bois mon café sans sucre ».")
+        kinds = {f["id"]: f["kind"] for f in memory.facts(200)}
         for i, t, d in facts:
-            ui.out(f"  {ui.violet(str(i).rjust(3))}  {t} {ui.dim(d[:10])}")
+            ui.out(f"  {ui.violet(str(i).rjust(3))}  {t} {ui.dim(d[:10] + (' · ' + memory.KINDS.get(kinds.get(i), '') if kinds.get(i) else ''))}")
     elif cmd == "/oublie":
         if arg.strip().isdigit() and memory.delete(arg.strip()):
             ui.ok(f"Fait n° {arg.strip()} oublié")
@@ -177,6 +180,18 @@ def command(q, contents):
             ui.info(evs)
         for e in evs if isinstance(evs, list) else []:
             ui.out(f"  {ui.violet(str(e['id']).rjust(3))}  {e['quand']}  {e['titre']}" + (ui.dim(f" · {e['lieu']}") if e.get("lieu") else ""))
+    elif cmd == "/regles":
+        rules_cmd(arg.split())
+    elif cmd == "/habitudes":
+        if arg.strip() == "effacer":
+            habits.clear()
+            ui.ok("Historique des habitudes effacé")
+        else:
+            rows = habits.summary()
+            for sample, n in rows:
+                ui.out(f"  {ui.violet(str(n).rjust(3))}×  {sample}")
+            if not rows:
+                ui.info("Aucune demande répétée pour l'instant.")
     elif cmd == "/diagnostic":
         with ui.Spinner("Diagnostic"):
             items = diagnostic.run()
@@ -336,6 +351,31 @@ def jobs_cmd(a):
             ui.out("       " + ui.dim("→ " + j["last_result"][:90].replace("\n", " ")))
 
 
+def rules_cmd(a):
+    if a and a[0] == "aide":
+        for k, d in [("/regles", "liste des règles"), ("/regles autoriser <outil> [site|dossier] [jours]", "ex : /regles autoriser read_url wikipedia.org 30"),
+                     ("/regles rm N", "supprimer une règle")]:
+            ui.out(f"  {ui.cyan(k.ljust(52))} {d}")
+        ui.out(ui.dim("  Éligibles : " + ", ".join(sorted(rules.RULEABLE)) + ". Jamais après lecture de contenu externe."))
+    elif a and a[0] == "autoriser" and len(a) > 1:
+        tool = a[1]
+        days = int(a[-1]) if len(a) > 2 and a[-1].isdigit() else 0
+        value = " ".join(a[2:-1] if days else a[2:])
+        try:
+            rid = rules.add(tool, value, days)
+            ui.ok(f"Règle n° {rid} : {rules.describe([r for r in rules.rules() if r['id'] == rid][0])}")
+        except ValueError as e:
+            ui.warn(str(e))
+    elif a and a[0] == "rm" and len(a) > 1 and a[1].isdigit():
+        ui.ok("Supprimée") if rules.remove(a[1]) else ui.warn("Règle introuvable")
+    else:
+        rs = rules.rules()
+        for r in rs:
+            ui.out(f"  {ui.violet(str(r['id']).rjust(3))}  {rules.describe(r)}")
+        if not rs:
+            ui.info("Aucune règle. Exemple : /regles autoriser read_url wikipedia.org")
+
+
 def pending_cmd():
     items = scheduler.pending_list()
     if not items:
@@ -353,7 +393,7 @@ def pending_cmd():
 
 def ask_model(q, contents):
     CLI_CANCEL.clear()
-    return engine.run(q, contents, CliIO(), cancel=CLI_CANCEL)
+    return engine.run(q, contents, CliIO(), cancel=CLI_CANCEL, learn=True)
 
 
 def main():

@@ -149,10 +149,15 @@ function askCard(ev) {
   if (args) card.appendChild(el("pre", "args", args));
   if (ev.tainted) card.appendChild(el("div", "warn", "⚠ Du contenu externe (web, SMS) a été lu juste avant : vérifie que c'est bien toi qui veux cette action."));
   const box = el("div", "row");
-  let field = null;
+  let field = null, always = null;
   if (sensitive) { field = el("input"); field.placeholder = "Tape OUI"; field.autocapitalize = "characters"; card.appendChild(field); }
+  if (ev.ruleable) {
+    const lab = el("label", "s"); always = el("input"); always.type = "checkbox"; always.style.cssText = "width:auto;min-height:0;margin-right:8px";
+    lab.append(always, document.createTextNode("Toujours autoriser ce genre d'action" + (ev.rule_hint ? " (" + ev.rule_hint + ")" : "")));
+    card.appendChild(lab);
+  }
   const yes = el("button", "btn go", "Autoriser"), no = el("button", "btn no", "Refuser");
-  const send = ok => { yes.disabled = no.disabled = true; api("/api/approve", { aid: ev.aid, ok, text: field ? field.value : "" }).catch(e => toast(e.message)); };
+  const send = ok => { yes.disabled = no.disabled = true; api("/api/approve", { aid: ev.aid, ok, always: !!(always && always.checked), text: field ? field.value : "" }).catch(e => toast(e.message)); };
   yes.onclick = () => send(true); no.onclick = () => send(false);
   box.append(yes, no); card.appendChild(box);
   asks[ev.aid] = card; push(card); updateBadge();
@@ -320,6 +325,13 @@ function renderSet() {
   const sp = el("button", "btn", S.speak ? "Lecture à voix haute : activée" : "Lecture à voix haute : désactivée");
   sp.onclick = () => api("/api/speak", { on: !S.speak }).then(refresh).catch(e => toast(e.message));
   v.appendChild(sp);
+  v.appendChild(el("h2", null, "Règles permanentes"));
+  if (!(S.rules || []).length) v.appendChild(el("div", "s", "Aucune. Coche « Toujours autoriser » sur une demande d'accord, ou /regles dans le terminal."));
+  (S.rules || []).forEach(r => {
+    const c = el("div", "item"), b = el("button", "btn sm no", "Supprimer");
+    b.onclick = () => api("/api/rule", { id: r.id, action: "delete" }).then(refresh).catch(e => toast(e.message));
+    c.append(el("div", "t", "n° " + r.id + " · " + r.text), b); v.appendChild(c);
+  });
   v.appendChild(el("h2", null, "Fournisseurs d'IA"));
   S.providers.forEach(p => {
     const c = el("div", "item");

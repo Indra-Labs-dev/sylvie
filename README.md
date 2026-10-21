@@ -44,6 +44,12 @@ Sylvie peut agir seule, mais **tu valides le cadre une fois**, et le code appliq
 - **Agenda** : Termux ne peut pas lire l'agenda Android, Sylvie tient donc le sien (`agenda_add`, `/agenda`), avec rappel automatique avant chaque événement et détection des conflits d'horaire. `agenda_phone` ouvre l'agenda du téléphone avec l'événement prérempli (tu touches Enregistrer), `agenda_import` lit un `.ics` exporté depuis Google Agenda, `agenda_export` produit un `.ics`. Les événements récurrents importés sont ignorés. Le briefing du matin inclut l'agenda.
 - **Vision** : `camera_look` prend une photo (avant ou arrière) et la regarde : lire une affiche, un document, un plat, un câble. `image_analyze` fait pareil sur une image du téléphone. Chaque photo demande ton accord, ne part que vers Gemini, apparaît en aperçu dans l'interface web et est supprimée aussitôt (sauf `keep`). Le texte lu dans une image est traité comme une donnée, jamais comme une instruction. `pkg install python-pillow` réduit les photos avant envoi.
 
+## Règles permanentes, mémoire, habitudes
+
+- **Règles** : au lieu de confirmer chaque fois, tu autorises un genre d'action (« lire wikipedia.org », « écrire dans Documents »). Case « Toujours autoriser » dans l'interface web, ou `/regles autoriser read_url wikipedia.org 30` (30 jours). Jamais pour SMS, appels, photo, suppression, écrasement ; jamais juste après la lecture de contenu externe. Chaque usage est journalisé. `/regles`, `/regles rm N`.
+- **Mémoire structurée** : les souvenirs ont un type (préférence, personne, projet, lieu, travail) et les doublons sont fusionnés. Au-delà de 40 souvenirs, seuls les plus pertinents pour la question et les plus récents sont injectés.
+- **Habitudes** : si tu fais la même demande à peu près à la même heure sur 3 jours, Sylvie propose de la programmer. Local, 45 jours, `/habitudes effacer`, `SYLVIE_HABITS=0` pour désactiver.
+
 ## Commandes
 
 | Commande | Effet |

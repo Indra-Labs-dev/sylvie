@@ -67,13 +67,13 @@ def calculate(expression):
 
 # ---------- Mémoire ----------
 
-def remember(fact):
-    fid, new = memory.add(fact)
+def remember(fact, kind=""):
+    fid, new = memory.add(fact, kind)
     return {"id": fid, "status": "retenu" if new else "déjà connu"}
 
 
 def recall(query):
-    return [{"id": i, "fait": t, "date": d} for i, t, d in memory.search(query)] or "rien trouvé"
+    return [{"id": i, "fait": t, "date": d} for i, t, d in memory.search(query)] or "rien trouvé"  # noqa: E501
 
 
 def forget(fact_id):
@@ -285,7 +285,8 @@ tool(calculate, "auto", "Calcule une expression arithmétique (+ - * / % ** //)"
      {"expression": (S, "ex : (1250 * 0.18) + 3")})
 tool(remember, "auto", "Retient durablement un fait utile sur l'utilisateur (préférence, info personnelle, "
      "projet). À utiliser quand il partage une info durable ou demande de retenir quelque chose.",
-     {"fact": (S, "le fait, en une phrase courte à la 3e personne")}, writes=True)
+     {"fact": (S, "le fait, en une phrase courte à la 3e personne"),
+      "kind": (S, "catégorie : preference, personne, projet, lieu, travail ou autre")}, required=["fact"], writes=True)
 tool(recall, "auto", "Cherche dans la mémoire à long terme", {"query": (S, "mots-clés")})
 tool(forget, "confirm", "Supprime un fait de la mémoire", {"fact_id": (I, "numéro du fait")})
 tool(web_search, "auto", "Recherche sur le web (actualité, prix, lieux, faits récents). Mets la ville dans la requête pour un lieu.",

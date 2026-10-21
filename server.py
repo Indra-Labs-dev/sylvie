@@ -10,7 +10,7 @@ import contextlib, hmac, json, os, re, secrets, struct, sys, threading, time, zl
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-import agenda, agent, apis, backup, diagnostic, engine, files, gate, history, memory, planner, router, scheduler, tools, voice
+import agenda, agent, apis, backup, diagnostic, engine, files, gate, history, memory, planner, router, rules, scheduler, tools, voice
 from fast import fast_path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -72,9 +72,10 @@ def token():
 
 def web_approve(name, args, risk, tainted, timeout=APPROVAL_TIMEOUT):
     aid = secrets.token_hex(4)
-    req = {"aid": aid, "name": name, "args": args, "risk": risk, "tainted": bool(tainted), "event": threading.Event(), "ok": False}
+    hint = rules.suggest(name, args) if risk == "confirm" and not tainted and isinstance(args, dict) else None
+    req = {"aid": aid, "name": name, "args": args, "risk": risk, "tainted": bool(tainted), "event": threading.Event(), "ok": False, "hint": hint}
     Web.approvals[aid] = req
-    hub.publish("approval", aid=aid, name=name, args=args, risk=risk, tainted=bool(tainted))
+    hub.publish("approval", aid=aid, name=name, args=args, risk=risk, tainted=bool(tainted), ruleable=hint is not None, rule_hint=hint or "")
     with contextlib.suppress(Exception):
         tools.termux("termux-notification", "-t", "Sylvie attend ton accord", "-c", f"Action : {name}", "--id", "sylvie-ask",
                      "--priority", "high", timeout=8)
@@ -86,10 +87,16 @@ def web_approve(name, args, risk, tainted, timeout=APPROVAL_TIMEOUT):
     return ok
 
 
-def resolve_approval(aid, ok, text=""):
+def resolve_approval(aid, ok, text="", always=False):
     req = Web.approvals.get(aid)
     if not req:
         return False
+    if ok and always and req.get("hint") is not None and req["risk"] == "confirm" and not req["tainted"]:
+        try:   # « toujours autoriser » : règle limitée au site ou au dossier de cet appel
+            rid = rules.add(req["name"], req["hint"])
+            hub.publish("info", level="ok", text=f"Règle n° {rid} créée : {rules.describe([r for r in rules.rules() if r['id'] == rid][0])}")
+        except ValueError as e:
+            hub.publish("info", level="error", text=str(e))
     if ok and req["risk"] == "sensitive" and text.strip() != "OUI":
         ok = False   # action sensible : il faut taper OUI
     req["ok"] = ok
@@ -149,7 +156,7 @@ def start_turn(text):
                 io.say(quick)
                 Web.contents += [{"role": "user", "parts": [{"text": text}]}, {"role": "model", "parts": [{"text": quick}]}]
             else:
-                Web.failed = engine.run(text, Web.contents, io, cancel=Web.cancel)
+                Web.failed = engine.run(text, Web.contents, io, cancel=Web.cancel, learn=True)
         except Exception as e:  # le serveur ne doit jamais tomber sur une erreur de tour
             io.error(str(e))
         finally:
@@ -237,6 +244,7 @@ def state():
                   "next": scheduler.fmt(j["next_run"]) if j["enabled"] else "", "enabled": j["enabled"], "last": j["last_result"][:200]}
                  for j in scheduler.jobs()],
         "pending": scheduler.pending_list(),
+        "rules": [{"id": r["id"], "text": rules.describe(r)} for r in rules.rules()],
         "agenda": agenda_week(),
         "goals": [{k: g[k] for k in ("id", "goal", "status", "result", "done", "calls")} | {"steps": len((g["plan"] or {}).get("steps", []))}
                   for g in planner.goals(8)],
@@ -438,7 +446,7 @@ class Handler(BaseHTTPRequestHandler):
             hub.publish("info", level="info", text="Arrêt demandé")
             return 200, {"ok": True}
         if path == "/api/approve":
-            return (200, {"ok": True}) if resolve_approval(str(d.get("aid")), bool(d.get("ok")), str(d.get("text", ""))) else (404, {"error": "demande expirée"})
+            return (200, {"ok": True}) if resolve_approval(str(d.get("aid")), bool(d.get("ok")), str(d.get("text", "")), bool(d.get("always"))) else (404, {"error": "demande expirée"})
         if path == "/api/pending":
             return 200, run_pending(int(d.get("id")), bool(d.get("ok")), str(d.get("text", "")))
         if path == "/api/mic":
@@ -448,6 +456,10 @@ class Handler(BaseHTTPRequestHandler):
             if not Web.speak:
                 voice.stop()
             return 200, {"speak": Web.speak}
+        if path == "/api/rule":
+            if d.get("action") != "delete":
+                raise ValueError("action inconnue")   # une règle se crée depuis une demande d'accord ou dans le terminal, pas en un clic aveugle
+            return (200, {"ok": True}) if rules.remove(int(d.get("id"))) else (404, {"error": "règle introuvable"})
         if path == "/api/diagnostic":
             items = diagnostic.run(port=PORT)
             return 200, {"items": [{"level": a, "label": b, "hint": c} for a, b, c in items], "summary": diagnostic.summary(items)}
