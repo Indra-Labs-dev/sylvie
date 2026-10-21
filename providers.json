@@ -4,7 +4,7 @@
     {"id": "gemini-flash", "kind": "gemini", "model": "gemini-3.6-flash", "env": "GEMINI_API_KEY",
      "roles": ["chat", "fast", "search", "audio", "vision"], "trust": "private"},
     {"id": "gemini-lite", "kind": "gemini", "model": "gemini-3.5-flash-lite", "env": "GEMINI_API_KEY",
-     "roles": ["chat", "fast", "search", "vision"], "trust": "private"},
+     "roles": ["chat", "fast", "search", "audio", "vision"], "trust": "private"},
     {"id": "groq", "kind": "openai", "base_url": "https://api.groq.com/openai/v1", "model": "", "env": "GROQ_API_KEY",
      "roles": ["fast", "chat"], "trust": "public"},
     {"id": "openrouter", "kind": "openai", "base_url": "https://openrouter.ai/api/v1", "model": "", "env": "OPENROUTER_API_KEY",

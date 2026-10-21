@@ -228,7 +228,18 @@ def clipboard_set(text):
 
 
 def location():
-    loc = termux("termux-location", "-p", "network", "-r", "once", timeout=45, as_json=True)
+    loc = {}
+    for args, wait in ((("-p", "network", "-r", "last"), 12), (("-p", "network", "-r", "once"), 30)):   # d'abord la dernière position connue (rapide)
+        try:
+            loc = termux("termux-location", *args, timeout=wait, as_json=True)
+        except RuntimeError as e:
+            last = e
+            continue
+        if isinstance(loc, dict) and loc.get("latitude") is not None:
+            break
+    else:
+        raise RuntimeError("position indisponible : autorise la Localisation pour Termux:API (Android › Applis › Termux:API › Autorisations › "
+                           "Localisation › « Toujours » ou « Pendant l'utilisation ») et active la localisation du téléphone")
     res = {k: loc.get(k) for k in ("latitude", "longitude", "accuracy")}
     if res["latitude"] is None:
         raise RuntimeError("position indisponible (localisation désactivée ou permission refusée)")
