@@ -149,6 +149,15 @@ def _bump(name):
         con.close()
 
 
+def usage_today():
+    """Appels du jour par API (seulement celles utilisées)."""
+    con = _db()
+    try:
+        return {r[0]: r[1] for r in con.execute("SELECT api, calls FROM api_usage WHERE day=? AND calls>0 ORDER BY calls DESC", (time.strftime("%F"),))}
+    finally:
+        con.close()
+
+
 def health():
     con = _db()
     try:

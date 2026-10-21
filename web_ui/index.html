@@ -326,6 +326,14 @@ function renderSet() {
     c.append(el("div", "t", (p.ok ? "● " : "○ ") + p.id), el("div", "s", p.model + " · " + (p.trust === "private" ? "privé" : "public") + " · " + p.calls + (p.limit ? "/" + p.limit : "") + " appels · " + p.why));
     v.appendChild(c);
   });
+  v.appendChild(el("h2", null, "Santé et sauvegarde"));
+  const dg = el("button", "btn", "Lancer le diagnostic"), bk = el("button", "btn", "Sauvegarder maintenant"), out = el("div");
+  dg.onclick = () => { dg.disabled = true; api("/api/diagnostic").then(r => {
+    out.replaceChildren(el("div", "s", r.summary));
+    r.items.forEach(i => out.appendChild(el("div", "item", null, [el("div", "t", ({ ok: "✔ ", warn: "! ", bad: "✖ " })[i.level] + i.label), el("div", "s", i.hint)])));
+  }).catch(e => toast(e.message)).finally(() => dg.disabled = false); };
+  bk.onclick = () => api("/api/backup").then(r => toast("Sauvegarde : " + r.path)).catch(e => toast(e.message));
+  const row = el("div", "row"); row.append(dg, bk); v.append(row, out);
   v.appendChild(el("h2", null, "Fenêtre flottante"));
   const a = el("a", "btn", "Ouvrir la version mini"); a.href = "/mini"; a.style.display = "inline-block"; a.style.textDecoration = "none";
   v.append(a, el("div", "s", S.memory + " souvenir(s) · " + S.apis + " API. Installe cette page (menu du navigateur › Installer l'application), puis ouvre-la en fenêtre flottante depuis la barre latérale de HyperOS."));

@@ -10,7 +10,7 @@ import contextlib, hmac, json, os, re, secrets, struct, sys, threading, time, zl
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-import agenda, agent, apis, engine, files, gate, memory, planner, router, scheduler, tools, voice
+import agenda, agent, apis, backup, diagnostic, engine, files, gate, history, memory, planner, router, scheduler, tools, voice
 from fast import fast_path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -52,7 +52,7 @@ scheduler.LISTENERS.append(lambda ev: hub.publish("notify", title=ev.get("title"
 # ------------------------------------------------------------------ état de la session web
 
 class Web:
-    contents = []
+    contents = history.load("web")
     lock = threading.Lock()          # un seul tour de conversation à la fois
     cancel = threading.Event()
     failed = None
@@ -143,6 +143,7 @@ def start_turn(text):
                     io.info("Rien à réessayer.")
             elif low == "/reset":
                 Web.contents.clear()
+                history.clear("web")
                 io.ok("Nouvelle conversation")
             elif (quick := fast_path(text)):
                 io.say(quick)
@@ -152,6 +153,8 @@ def start_turn(text):
         except Exception as e:  # le serveur ne doit jamais tomber sur une erreur de tour
             io.error(str(e))
         finally:
+            with contextlib.suppress(Exception):
+                history.save("web", Web.contents)
             Web.lock.release()
             hub.publish("idle")
 
@@ -445,6 +448,12 @@ class Handler(BaseHTTPRequestHandler):
             if not Web.speak:
                 voice.stop()
             return 200, {"speak": Web.speak}
+        if path == "/api/diagnostic":
+            items = diagnostic.run(port=PORT)
+            return 200, {"items": [{"level": a, "label": b, "hint": c} for a, b, c in items], "summary": diagnostic.summary(items)}
+        if path == "/api/backup":
+            p = backup.create()
+            return 200, {"path": p, "backups": backup.list_backups()[:5]}
         if path == "/api/upload":
             return 200, save_upload(d.get("name"), d.get("data"))
         if path == "/api/job/add":
@@ -511,6 +520,8 @@ def main():
         with contextlib.suppress(Exception):
             tools.termux(*cmd, timeout=5)
     scheduler.start()
+    with contextlib.suppress(Exception):
+        backup.auto()
     quick_actions(base, tok)
     print(f"Sylvie écoute sur {base}  (visible seulement depuis ce téléphone)")
     print(f"Lien d'ouverture : {base}/?t={tok}")

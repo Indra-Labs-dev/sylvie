@@ -9,3 +9,4 @@ providers.local.json
 apis.local.json
 .token
 .capture*
+serve.log

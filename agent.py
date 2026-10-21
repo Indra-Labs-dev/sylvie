@@ -1,7 +1,7 @@
 """Sylvie — agent IA personnel sur Termux. Lancer : . ./.env && python agent.py"""
 import base64, json, os, sys, threading
 
-import agenda, apis, camera, engine, files, gate, llm, memory, planner, router, scheduler, tools, ui, voice  # noqa: F401
+import agenda, apis, backup, camera, diagnostic, engine, files, gate, history, llm, memory, planner, router, scheduler, tools, ui, voice  # noqa: F401
 from fast import fast_path
 
 STT = os.environ.get("SYLVIE_STT", "gemini")  # gemini (enregistre + transcrit) | android
@@ -25,6 +25,10 @@ HELP = [
     ("/briefing HH:MM", "briefing du matin chaque jour à cette heure"),
     ("/attente", "actions que des tâches automatiques attendent de toi"),
     ("/agenda [jours]", "événements à venir de l'agenda de Sylvie"),
+    ("/diagnostic", "vérifie permissions, outils, clés, réseau et dit quoi corriger"),
+    ("/quotas", "appels du jour par fournisseur d'IA et par API"),
+    ("/sauvegarde", "sauvegarde la mémoire, l'agenda et les tâches (7 dernières gardées)"),
+    ("/restaurer [nom]", "restaure une sauvegarde (action sensible)"),
     ("/r", "réessayer la dernière question (après une panne)"),
     ("/reset", "nouvelle conversation (la mémoire reste)"),
     ("/aide", "cette aide"),
@@ -173,8 +177,41 @@ def command(q, contents):
             ui.info(evs)
         for e in evs if isinstance(evs, list) else []:
             ui.out(f"  {ui.violet(str(e['id']).rjust(3))}  {e['quand']}  {e['titre']}" + (ui.dim(f" · {e['lieu']}") if e.get("lieu") else ""))
+    elif cmd == "/diagnostic":
+        with ui.Spinner("Diagnostic"):
+            items = diagnostic.run()
+        mark = {"ok": ui.green("✔"), "warn": ui.yellow("!"), "bad": ui.red("✖")}
+        for lvl, label, hint in items:
+            ui.out(f"  {mark[lvl]} {label}" + (f"\n      {ui.dim(hint)}" if hint else ""))
+        ui.info(diagnostic.summary(items))
+    elif cmd == "/quotas":
+        for r in router.table():
+            if r["ok"] or r["calls"]:
+                ui.out(f"  {r['id'].ljust(14)} {r['calls']}{'/' + str(r['limit']) if r['limit'] else ''} appels aujourd'hui · {ui.dim(r['why'])}")
+        used = apis.usage_today()
+        ui.out("  " + (", ".join(f"{k} {v}" for k, v in used.items()) if used else ui.dim("aucune API appelée aujourd'hui")))
+    elif cmd == "/sauvegarde":
+        try:
+            p = backup.create()
+            ui.ok(f"Sauvegarde : {p}")
+            ui.out(ui.dim("  " + ", ".join(b["nom"] for b in backup.list_backups()[:3])))
+        except Exception as e:
+            ui.error(str(e))
+    elif cmd == "/restaurer":
+        names = [b["nom"] for b in backup.list_backups()]
+        if not arg.strip():
+            ui.info("Sauvegardes : " + (", ".join(names) or "aucune") + "  ·  /restaurer <nom>")
+        elif gate.ask("restaurer_sauvegarde", {"nom": arg.strip(), "effet": "remplace mémoire, agenda et tâches actuels"}, "sensitive"):
+            try:
+                backup.restore(arg.strip())
+                contents.clear()
+                history.clear("cli")
+                ui.ok("Restauré. Relance Sylvie pour tout recharger.")
+            except Exception as e:
+                ui.error(str(e))
     elif cmd == "/reset":
         contents.clear()
+        history.clear("cli")
         ui.ok("Nouvelle conversation")
     else:
         return False
@@ -329,7 +366,12 @@ def main():
     p = router.primary()
     ui.banner(f"assistante personnelle · {p['model'] if p else 'aucun modèle (voir /fournisseurs)'} · "
               f"{len(apis.CATALOG)} API · {memory.count()} souvenir(s) · /aide")
-    contents = []
+    with __import__("contextlib").suppress(Exception):
+        if backup.auto():
+            ui.out(ui.dim("  sauvegarde hebdomadaire faite"))
+    contents = history.load("cli")
+    if contents:
+        ui.info(f"Conversation reprise ({len(contents)} messages) · /reset pour repartir de zéro")
     failed = None  # dernière question perdue sur une panne de l'API
     while True:
         try:
@@ -359,9 +401,11 @@ def main():
         if quick:  # demande triviale : réponse locale, sans appel API
             say(quick)
             contents += [{"role": "user", "parts": [{"text": q}]}, {"role": "model", "parts": [{"text": quick}]}]
+            history.save("cli", contents)
             continue
         try:
             failed = ask_model(q, contents)
+            history.save("cli", contents)
         except KeyboardInterrupt:
             ui.warn("Interrompu")
     voice.stop()

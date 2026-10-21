@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Mise à jour semi-automatique de Sylvie : tu vois les changements, puis tu valides.
+# Mise à jour semi-automatique de Sylvie : tu vois les changements, tu valides, les tests tournent, retour arrière si ça casse.
 set -e
 cd "$(dirname "$0")"
 git fetch -q origin main
@@ -16,8 +16,27 @@ echo
 read -p "Voir le détail du code ? (o/N) " d
 [ "$d" = "o" ] && git diff HEAD origin/main | less
 read -p "Appliquer ces changements ? (o/N) " r
-if [ "$r" = "o" ]; then
-    git merge --ff-only origin/main && echo "OK, mis à jour."
-else
+if [ "$r" != "o" ]; then
     echo "Annulé."
+    exit 0
+fi
+OLD=$(git rev-parse HEAD)
+git merge --ff-only origin/main
+if [ "$SYLVIE_SKIP_TESTS" = "1" ]; then
+    echo "OK, mis à jour (tests ignorés)."
+    exit 0
+fi
+echo "→ Vérification (tests)..."
+if python -B -m unittest discover -s tests >/tmp/sylvie-tests.log 2>&1; then
+    echo "OK, mis à jour : $(tail -n 3 /tmp/sylvie-tests.log | head -n 1)"
+else
+    echo "✖ Les tests échouent sur ce téléphone :"
+    grep -E "^(FAIL|ERROR):" /tmp/sylvie-tests.log | head -n 8
+    read -p "Revenir à la version précédente ? (O/n) " b
+    if [ "$b" != "n" ]; then
+        git reset -q --hard "$OLD"
+        echo "Retour à la version précédente. Détail : /tmp/sylvie-tests.log"
+    else
+        echo "Mise à jour gardée malgré les échecs."
+    fi
 fi
