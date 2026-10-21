@@ -28,6 +28,16 @@ Ouvre une nouvelle session Termux, puis tape **`sylvie`**. Avec l'appli **Termux
 
 Tape `/outils` pour la liste exacte.
 
+## Autonomie : tâches, objectifs, interface web
+
+Sylvie peut agir seule, mais **tu valides le cadre une fois**, et le code applique la règle ensuite.
+
+- **Tâches programmées** (`schedule_add`, `/taches`, onglet Tâches) : rappels, briefing du matin (`/briefing 07:30`), surveillance d'une API (alerte seulement si le résultat change : aucun jeton consommé), tâches IA récurrentes. À la création, la boîte de confirmation montre exactement ce que la tâche pourra faire. Ensuite, sans toi : seuls les outils listés sont utilisables ; SMS et appels sont interdits ; tout outil non prévu est refusé et **mis en attente** (onglet Attente, `/attente`) ; après lecture de contenu externe, plus aucune action. Un téléphone éteint ne déclenche pas de rafale : une tâche récurrente manquée de plus de 12 h est sautée.
+- **Objectifs** (`/objectif ...`, onglet Objectifs, ou simplement une demande complexe) : Sylvie propose un **plan** (étapes, type, outils prévus), tu valides, puis des sous-agents spécialisés l'exécutent : recherche, données, téléphone, rédaction, vérification. Chacun n'a accès qu'aux outils de son type. SMS et appels demandent toujours de taper OUI. Budget de 40 appels au modèle, arrêt à tout moment, tout est dans `/journal`.
+- **Interface web** : `sylvie serve` démarre un serveur **local** (127.0.0.1, invisible depuis le Wi-Fi) et ouvre la page. Chat, micro, validations d'actions (taper OUI pour les sensibles), tâches, objectifs, fournisseurs. Un jeton secret (`.token`) est exigé, avec contrôle de l'hôte et de l'origine.
+- **Popup** : une notification permanente donne **Parler / Mini / Stop** sans ouvrir Termux. `/mini` est une version compacte : installe la page (menu du navigateur, « Installer l'application »), puis ouvre-la en fenêtre flottante depuis la barre latérale HyperOS. Une vraie bulle par-dessus les autres applis (comme Messenger) demande une application Android native, ce que Termux ne peut pas créer ; l'alternative est **Termux:Float** (F-Droid) pour une fenêtre de terminal flottante où lancer `sylvie`.
+- Pour que les tâches tournent écran éteint : `sylvie serve` prend un wake-lock ; désactive l'optimisation de batterie de Termux (Paramètres › Batterie › Termux › Aucune restriction, et verrouille l'appli dans les récents).
+
 ## Commandes
 
 | Commande | Effet |
@@ -39,6 +49,8 @@ Tape `/outils` pour la liste exacte.
 | `/modele [nom]` | voir ou changer le modèle principal |
 | `/fournisseurs [aide]` | état, budgets et pauses des fournisseurs d'IA ; tester, choisir un modèle, régler la confiance |
 | `/apis [mot]`, `/apitest [nom]` | catalogue d'API, et test de chacune avec son exemple |
+| `/objectif <texte>` | mission en plusieurs étapes avec plan à valider |
+| `/taches`, `/briefing HH:MM`, `/attente` | tâches programmées, briefing du matin, actions en attente de ton accord |
 | `/r` | réessayer la dernière question après une panne de l'API |
 | `/reset` | nouvelle conversation (la mémoire reste) |
 | `q` | quitter |
@@ -90,6 +102,6 @@ Affiche les commits et le diff, puis demande validation avant d'appliquer.
 
 ## Architecture
 
-`agent.py` (boucle, commandes) · `llm.py` + `router.py` (fournisseurs, pauses, budgets) · `apis.py` + `apis.json` (catalogue d'API) · `web.py` (lecture de pages sûre) · `tools.py` (outils et niveaux de risque) · `gate.py` (confirmation, journal) · `memory.py` (SQLite) · `voice.py` (micro, synthèse) · `fast.py` (réponses locales) · `ui.py` (couleurs, animations)
+`agent.py` (terminal, commandes) · `engine.py` (boucle modèle ↔ outils commune) · `scheduler.py` (rappels, tâches, surveillances) · `planner.py` (objectifs et sous-agents) · `server.py` + `web_ui/` (interface web) · `llm.py` + `router.py` (fournisseurs, pauses, budgets) · `apis.py` + `apis.json` (catalogue d'API) · `web.py` (lecture de pages sûre) · `tools.py` (outils et niveaux de risque) · `gate.py` (confirmation, journal) · `memory.py` (SQLite) · `voice.py` (micro, synthèse) · `fast.py` (réponses locales) · `ui.py` (couleurs, animations)
 
 Pour ajouter un outil : écrire la fonction dans `tools.py`, puis l'enregistrer avec `tool(fonction, "auto"|"confirm"|"sensitive", "description", {paramètres})`.

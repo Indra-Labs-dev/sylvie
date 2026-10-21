@@ -265,6 +265,7 @@ def call(number):
 
 S, I, B = "STRING", "INTEGER", "BOOLEAN"
 REGISTRY = {}
+DECL = []  # déclarations pour le modèle ; les modules scheduler et planner y ajoutent leurs outils
 
 
 def tool(fn, risk, desc, params=None, required=None, external=False, writes=False, egress=False, risk_fn=None, taints_fn=None):
@@ -276,6 +277,7 @@ def tool(fn, risk, desc, params=None, required=None, external=False, writes=Fals
                               "required": required if required is not None else list(params)}
     REGISTRY[fn.__name__] = {"fn": fn, "risk": risk, "external": external, "writes": writes, "egress": egress,
                              "risk_fn": risk_fn, "taints_fn": taints_fn, "decl": decl}
+    DECL[:] = [d for d in DECL if d["name"] != fn.__name__] + [decl]
 
 
 tool(get_time, "auto", "Date et heure actuelles")
@@ -317,4 +319,3 @@ tool(sms_list, "confirm", "Lit les derniers SMS reçus", {"limit": (I, "nombre, 
 tool(sms_send, "sensitive", "Envoie un SMS", {"number": (S, "numéro"), "text": (S, "message")})
 tool(call, "sensitive", "Lance un appel téléphonique", {"number": (S, "numéro")})
 
-DECL = [t["decl"] for t in REGISTRY.values()]

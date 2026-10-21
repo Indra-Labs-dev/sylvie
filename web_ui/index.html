@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16121f">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<title>Sylvie</title>
+<style>
+:root{--bg:#16121f;--panel:#1f1a2e;--panel2:#292340;--line:#35304d;--text:#ece9f6;--dim:#9b95b5;--accent:#a78bfa;--accent2:#7c5cf0;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--r:14px}
+@media (prefers-color-scheme:light){:root{--bg:#f6f4fc;--panel:#fff;--panel2:#ece8f8;--line:#ddd7ee;--text:#201a33;--dim:#6d6788;--accent:#6d4ae0;--accent2:#5b3bd1}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;overscroll-behavior:none}
+button,input,select,textarea{font:inherit;color:inherit}
+header{display:flex;align-items:center;gap:10px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{font-size:1.05rem;margin:0;letter-spacing:.14em;font-weight:700}
+header h1 span{color:var(--accent)}
+#pill{margin-left:auto;font-size:.8rem;color:var(--dim);display:flex;align-items:center;gap:6px}
+#dot{width:9px;height:9px;border-radius:50%;background:var(--ok)}
+#dot.busy{background:var(--accent);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+main{flex:1;min-height:0;position:relative}
+.view{position:absolute;inset:0;overflow-y:auto;padding:14px 16px;display:none}
+.view.on{display:block}
+#chat{display:none;flex-direction:column;gap:8px}
+#chat.on{display:flex}
+.msg{max-width:88%;padding:9px 13px;border-radius:var(--r);white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--accent2);color:#fff;border-bottom-right-radius:4px}
+.msg.sylvie{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px}
+.chip{align-self:flex-start;font:.78rem ui-monospace,Menlo,monospace;color:var(--dim);background:var(--panel2);border-radius:99px;padding:3px 10px;max-width:92%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.confirm{color:var(--warn)}.chip.sensitive{color:var(--bad)}
+.note{align-self:center;font-size:.8rem;color:var(--dim);text-align:center}
+.note.error{color:var(--bad)}.note.ok{color:var(--ok)}.note.progress{color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.card.ask{border-color:var(--warn);align-self:stretch}.card.ask.sensitive,.card.ask.tainted{border-color:var(--bad)}
+.card h3{margin:0;font-size:.95rem}
+.card .args{font:.82rem ui-monospace,Menlo,monospace;color:var(--dim);white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.warn{color:var(--bad);font-size:.85rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:0;border-radius:10px;padding:10px 16px;background:var(--panel2);cursor:pointer;min-height:44px}
+.btn.go{background:var(--accent2);color:#fff;font-weight:600}.btn.no{color:var(--bad)}.btn.sm{padding:6px 12px;min-height:36px;font-size:.85rem}
+.btn:disabled{opacity:.5}
+input,select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-height:44px}
+label{font-size:.8rem;color:var(--dim);display:block;margin:8px 0 3px}
+#composer{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid var(--line);background:var(--panel)}
+#composer textarea{resize:none;max-height:120px;flex:1}
+#composer .btn{flex:none;width:46px;padding:0;font-size:1.15rem}
+#mic.on{background:var(--bad);color:#fff;animation:pulse 1s infinite}
+#stop{display:none;background:var(--bad);color:#fff}
+nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;padding:9px 2px 8px;color:var(--dim);font-size:.72rem;cursor:pointer;position:relative}
+nav button b{display:block;font-size:1.15rem;font-weight:400}
+nav button.on{color:var(--accent)}
+.badge{position:absolute;top:3px;left:55%;background:var(--bad);color:#fff;border-radius:99px;font-size:.65rem;padding:0 6px}
+.item{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;margin-bottom:10px}
+.item .t{font-weight:600}.item .s{color:var(--dim);font-size:.85rem}
+.tag{display:inline-block;font-size:.7rem;border-radius:99px;padding:1px 8px;background:var(--panel2);color:var(--accent);margin-right:6px}
+h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:18px 0 8px}
+.toast{position:fixed;left:16px;right:16px;top:14px;z-index:9;background:var(--panel2);border:1px solid var(--accent);border-radius:var(--r);padding:11px 14px;box-shadow:0 8px 30px #0006}
+details summary{cursor:pointer;color:var(--accent);font-size:.85rem}
+body.mini header{padding:6px 12px}body.mini nav,body.mini #open-full{display:none}body.mini .view{padding:10px 12px}
+.empty{color:var(--dim);text-align:center;margin:30px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>SYL<span>VIE</span></h1>
+  <div id="pill"><span id="dot"></span><span id="status">Prête</span></div>
+</header>
+<main>
+  <section id="chat" class="view on" aria-live="polite"></section>
+  <section id="v-wait" class="view"></section>
+  <section id="v-jobs" class="view"></section>
+  <section id="v-goals" class="view"></section>
+  <section id="v-set" class="view"></section>
+</main>
+<form id="composer" autocomplete="off">
+  <button type="button" class="btn" id="mic" aria-label="Parler">🎙</button>
+  <textarea id="input" rows="1" placeholder="Écris à Sylvie…" enterkeyhint="send"></textarea>
+  <button type="button" class="btn" id="stop" aria-label="Arrêter">■</button>
+  <button type="submit" class="btn go" id="send" aria-label="Envoyer">➤</button>
+</form>
+<nav>
+  <button data-v="chat" class="on"><b>💬</b>Chat</button>
+  <button data-v="v-wait"><b>🔔</b>Attente<span class="badge" id="badge" hidden>0</span></button>
+  <button data-v="v-jobs"><b>⏰</b>Tâches</button>
+  <button data-v="v-goals"><b>🎯</b>Objectifs</button>
+  <button data-v="v-set"><b>⚙️</b>Réglages</button>
+</nav>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const MINI = location.pathname === "/mini";
+document.body.classList.toggle("mini", MINI);
+function el(tag, cls, text, kids) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  (kids || []).forEach(k => e.appendChild(k));
+  return e;
+}
+async function api(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || ("erreur " + r.status));
+  return j;
+}
+function toast(msg) {
+  const t = el("div", "toast", msg);
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 6000);
+}
+let S = { jobs: [], pending: [], goals: [], providers: [], api_names: [] };
+
+/* ---------- chat ---------- */
+const chat = $("#chat");
+function push(node) {
+  const near = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 140;
+  chat.appendChild(node);
+  if (near) chat.scrollTop = chat.scrollHeight;
+}
+function show(v) {
+  document.querySelectorAll(".view").forEach(x => x.classList.toggle("on", x.id === v));
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  $("#composer").style.display = v === "chat" ? "flex" : "none";
+  if (v === "chat") chat.scrollTop = chat.scrollHeight;
+  if (v !== "chat") refresh();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.v));
+
+function fmtArgs(a) {
+  if (a == null) return "";
+  if (typeof a !== "object") return String(a);
+  return Object.entries(a).map(([k, v]) => Array.isArray(v) ? k + " :\n  " + v.join("\n  ")
+    : k + " : " + (typeof v === "object" ? JSON.stringify(v) : v)).join("\n");
+}
+const asks = {};
+function askCard(ev) {
+  const sensitive = ev.risk === "sensitive";
+  const card = el("div", "card ask" + (sensitive ? " sensitive" : "") + (ev.tainted ? " tainted" : ""));
+  card.appendChild(el("h3", null, sensitive ? "Action sensible : tape OUI pour confirmer" : (ev.name === "plan" ? "Valider ce plan ?" : "Autoriser cette action ?")));
+  card.appendChild(el("div", null, ev.name));
+  const args = fmtArgs(ev.args);
+  if (args) card.appendChild(el("pre", "args", args));
+  if (ev.tainted) card.appendChild(el("div", "warn", "⚠ Du contenu externe (web, SMS) a été lu juste avant : vérifie que c'est bien toi qui veux cette action."));
+  const box = el("div", "row");
+  let field = null;
+  if (sensitive) { field = el("input"); field.placeholder = "Tape OUI"; field.autocapitalize = "characters"; card.appendChild(field); }
+  const yes = el("button", "btn go", "Autoriser"), no = el("button", "btn no", "Refuser");
+  const send = ok => { yes.disabled = no.disabled = true; api("/api/approve", { aid: ev.aid, ok, text: field ? field.value : "" }).catch(e => toast(e.message)); };
+  yes.onclick = () => send(true); no.onclick = () => send(false);
+  box.append(yes, no); card.appendChild(box);
+  asks[ev.aid] = card; push(card); updateBadge();
+}
+function updateBadge() {
+  const n = Object.keys(asks).length + S.pending.length;
+  $("#badge").hidden = !n; $("#badge").textContent = n;
+}
+
+function handle(ev) {
+  switch (ev.type) {
+    case "user": push(el("div", "msg user", ev.text)); break;
+    case "say": push(el("div", "msg sylvie", ev.text)); break;
+    case "tool": push(el("div", "chip " + ev.risk, "⚙ " + ev.name + (ev.args ? " " + ev.args : ""))); break;
+    case "info": push(el("div", "note " + ev.level, ev.text)); break;
+    case "busy": setBusy(ev.label); break;
+    case "idle": setBusy(null, true); break;
+    case "approval": askCard(ev); break;
+    case "approval_done": {
+      const c = asks[ev.aid]; delete asks[ev.aid];
+      if (c) { c.querySelectorAll("button,input").forEach(x => x.disabled = true); c.appendChild(el("div", "s", ev.ok ? "✔ Autorisé" : "✖ Refusé")); c.classList.remove("ask"); }
+      updateBadge(); break;
+    }
+    case "notify": toast(ev.title + " — " + ev.text.slice(0, 160)); refresh(); break;
+    case "mic": $("#mic").classList.toggle("on", ev.on); break;
+  }
+}
+let busyNow = false;
+function setBusy(label, idle) {
+  if (idle) { busyNow = false; $("#stop").style.display = "none"; }
+  else if (label) { busyNow = true; $("#stop").style.display = "block"; }
+  $("#dot").classList.toggle("busy", !!label || busyNow);
+  $("#status").textContent = label || (busyNow ? "Au travail…" : "Prête");
+}
+function connect() {
+  const es = new EventSource("/api/events");
+  es.onmessage = m => { try { handle(JSON.parse(m.data)); } catch (e) { console.error(e); } };
+  es.onerror = () => { $("#status").textContent = "Reconnexion…"; };
+  es.onopen = () => { if (!busyNow) $("#status").textContent = "Prête"; };
+}
+const input = $("#input");
+input.addEventListener("input", () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; });
+input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !matchMedia("(pointer:coarse)").matches) { e.preventDefault(); $("#composer").requestSubmit(); } });
+$("#composer").onsubmit = async e => {
+  e.preventDefault();
+  const text = input.value.trim(); if (!text) return;
+  input.value = ""; input.style.height = "auto";
+  try { await api("/api/chat", { text }); } catch (err) { toast(err.message); input.value = text; }
+};
+$("#stop").onclick = () => api("/api/stop").catch(e => toast(e.message));
+$("#mic").onclick = () => api("/api/mic").then(r => { if (r.result === "busy") toast("Sylvie est occupée."); }).catch(e => toast(e.message));
+
+/* ---------- états : attente, tâches, objectifs, réglages ---------- */
+async function refresh() {
+  try { S = await (await fetch("/api/state")).json(); } catch (e) { return; }
+  renderWait(); renderJobs(); renderGoals(); renderSet(); updateBadge();
+}
+function empty(t) { return el("div", "empty", t); }
+function renderWait() {
+  const v = $("#v-wait"); v.replaceChildren();
+  v.appendChild(el("h2", null, "Actions en attente de ton accord"));
+  if (!S.pending.length) v.appendChild(empty("Rien en attente. Quand une tâche automatique veut faire quelque chose qui n'était pas prévu, ça apparaît ici."));
+  S.pending.forEach(p => {
+    const sensitive = p.risk === "sensitive";
+    const c = el("div", "item");
+    c.append(el("div", "t", p.tool), el("div", "s", "demandé par " + p.source), el("pre", "args", fmtArgs(p.args)));
+    let field = null;
+    if (sensitive) { field = el("input"); field.placeholder = "Tape OUI pour confirmer"; c.appendChild(field); }
+    const r = el("div", "row");
+    const act = ok => api("/api/pending", { id: p.id, ok, text: field ? field.value : "" }).then(x => { toast(x.error || x.result || x.status); refresh(); }).catch(e => toast(e.message));
+    const y = el("button", "btn go sm", "Autoriser"), n = el("button", "btn no sm", "Refuser");
+    y.onclick = () => act(true); n.onclick = () => act(false);
+    r.append(y, n); c.appendChild(r); v.appendChild(c);
+  });
+}
+function renderJobs() {
+  const v = $("#v-jobs"); v.replaceChildren();
+  v.appendChild(el("h2", null, "Tâches programmées"));
+  if (!S.jobs.length) v.appendChild(empty("Aucune tâche. Demande-moi « rappelle-moi demain à 8h… » ou crée-en une ci-dessous."));
+  S.jobs.forEach(j => {
+    const c = el("div", "item");
+    c.append(el("div", "t", null, [el("span", "tag", j.kind), document.createTextNode(j.title)]),
+      el("div", "s", j.when + (j.enabled ? " · prochaine : " + j.next : " · terminée ou en pause")));
+    if (j.last) c.appendChild(el("div", "s", "→ " + j.last));
+    const r = el("div", "row");
+    const mk = (label, action, cls) => { const b = el("button", "btn sm " + (cls || ""), label); b.onclick = () => api("/api/job", { id: j.id, action }).then(refresh).catch(e => toast(e.message)); return b; };
+    r.append(mk("Lancer", "run"), mk(j.enabled ? "Pause" : "Réactiver", j.enabled ? "off" : "on"), mk("Supprimer", "delete", "no"));
+    c.appendChild(r); v.appendChild(c);
+  });
+  v.appendChild(el("h2", null, "Nouvelle tâche"));
+  v.appendChild(jobForm());
+}
+function jobForm() {
+  const f = el("form", "card");
+  f.innerHTML = "";
+  const field = (label, node) => { const w = el("div"); w.append(el("label", null, label), node); return w; };
+  const kind = el("select"); [["rappel", "Rappel"], ["briefing", "Briefing du matin"], ["surveillance", "Surveillance d'une API"]].forEach(([v, t]) => { const o = el("option", null, t); o.value = v; kind.appendChild(o); });
+  const title = el("input"); title.placeholder = "Nom court";
+  const text = el("input"); text.placeholder = "Message du rappel";
+  const when = el("select"); [["at", "Une fois"], ["daily", "Chaque jour"], ["every", "Toutes les N minutes"]].forEach(([v, t]) => { const o = el("option", null, t); o.value = v; when.appendChild(o); });
+  const at = el("input"); at.type = "datetime-local";
+  const daily = el("input"); daily.type = "time"; daily.value = "07:30";
+  const days = el("input"); days.placeholder = "jours : lun-ven (facultatif)";
+  const every = el("input"); every.type = "number"; every.min = 1; every.value = 60;
+  const api_ = el("input"); api_.setAttribute("list", "apilist"); api_.placeholder = "ex : cisa_kev";
+  const dl = el("datalist"); dl.id = "apilist"; (S.api_names || []).forEach(n => { const o = el("option"); o.value = n; dl.appendChild(o); });
+  const params = el("input"); params.placeholder = 'paramètres JSON, ex {"q":"huawei"}';
+  const wText = field("Message", text), wApi = field("API", api_), wParams = field("Paramètres", params);
+  const wAt = field("Date et heure", at), wDaily = field("Heure", daily), wDays = field("Jours", days), wEvery = field("Intervalle (minutes)", every);
+  const sync = () => {
+    wText.hidden = kind.value !== "rappel"; wApi.hidden = wParams.hidden = kind.value !== "surveillance";
+    if (kind.value === "briefing") when.value = "daily";
+    if (kind.value === "surveillance" && when.value === "at") when.value = "every";
+    wAt.hidden = when.value !== "at"; wDaily.hidden = wDays.hidden = when.value !== "daily"; wEvery.hidden = when.value !== "every";
+    when.disabled = kind.value === "briefing";
+  };
+  kind.onchange = when.onchange = sync;
+  const go = el("button", "btn go", "Créer"); go.type = "submit";
+  f.append(field("Type", kind), field("Nom", title), wText, wApi, wParams, field("Quand", when), wAt, wDaily, wDays, wEvery, dl, go);
+  sync();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const body = { kind: kind.value, title: title.value || (kind.value === "briefing" ? "Briefing du matin" : ""), text: text.value };
+    if (when.value === "at") body.at = at.value.replace("T", " "); else if (when.value === "daily") { body.daily = daily.value; body.weekdays = days.value; } else body.every_minutes = +every.value;
+    if (kind.value === "surveillance") { body.api = api_.value; body.params = params.value || "{}"; }
+    try { const r = await api("/api/job/add", body); toast("Créée : " + r.quand + " · prochaine " + r.prochaine_execution); refresh(); } catch (err) { toast(err.message); }
+  };
+  return f;
+}
+function renderGoals() {
+  const v = $("#v-goals"); v.replaceChildren();
+  v.appendChild(el("h2", null, "Nouvel objectif"));
+  const f = el("form", "card"), t = el("textarea"); t.rows = 3; t.placeholder = "Ex : Compare les offres d'emploi sécurité à Abidjan et fais-moi une liste courte";
+  const go = el("button", "btn go", "Proposer un plan"); go.type = "submit";
+  f.append(t, go, el("div", "s", "Sylvie te montre le plan, tu valides, puis elle l'exécute étape par étape. Tu peux arrêter à tout moment."));
+  f.onsubmit = async e => { e.preventDefault(); if (!t.value.trim()) return; try { await api("/api/goal", { goal: t.value }); t.value = ""; show("chat"); } catch (err) { toast(err.message); } };
+  v.appendChild(f);
+  v.appendChild(el("h2", null, "Récents"));
+  if (!S.goals.length) v.appendChild(empty("Aucun objectif pour l'instant."));
+  S.goals.forEach(g => {
+    const c = el("div", "item");
+    c.append(el("div", "t", null, [el("span", "tag", g.status), document.createTextNode(g.goal)]), el("div", "s", g.done + "/" + g.steps + " étapes · " + g.calls + " appels IA"));
+    if (g.result) { const d = el("details"); d.append(el("summary", null, "Résultat"), el("div", "s", g.result)); d.lastChild.style.whiteSpace = "pre-wrap"; c.appendChild(d); }
+    v.appendChild(c);
+  });
+}
+function renderSet() {
+  const v = $("#v-set"); v.replaceChildren();
+  v.appendChild(el("h2", null, "Voix"));
+  const sp = el("button", "btn", S.speak ? "Lecture à voix haute : activée" : "Lecture à voix haute : désactivée");
+  sp.onclick = () => api("/api/speak", { on: !S.speak }).then(refresh).catch(e => toast(e.message));
+  v.appendChild(sp);
+  v.appendChild(el("h2", null, "Fournisseurs d'IA"));
+  S.providers.forEach(p => {
+    const c = el("div", "item");
+    c.append(el("div", "t", (p.ok ? "● " : "○ ") + p.id), el("div", "s", p.model + " · " + (p.trust === "private" ? "privé" : "public") + " · " + p.calls + (p.limit ? "/" + p.limit : "") + " appels · " + p.why));
+    v.appendChild(c);
+  });
+  v.appendChild(el("h2", null, "Fenêtre flottante"));
+  const a = el("a", "btn", "Ouvrir la version mini"); a.href = "/mini"; a.style.display = "inline-block"; a.style.textDecoration = "none";
+  v.append(a, el("div", "s", S.memory + " souvenir(s) · " + S.apis + " API. Installe cette page (menu du navigateur › Installer l'application), puis ouvre-la en fenêtre flottante depuis la barre latérale de HyperOS."));
+}
+connect(); refresh(); setInterval(refresh, 20000);
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+</script>
+</body>
+</html>
