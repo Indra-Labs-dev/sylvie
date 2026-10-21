@@ -50,6 +50,12 @@ Sylvie peut agir seule, mais **tu valides le cadre une fois**, et le code appliq
 - **Mémoire structurée** : les souvenirs ont un type (préférence, personne, projet, lieu, travail) et les doublons sont fusionnés. Au-delà de 40 souvenirs, seuls les plus pertinents pour la question et les plus récents sont injectés.
 - **Habitudes** : si tu fais la même demande à peu près à la même heure sur 3 jours, Sylvie propose de la programmer. Local, 45 jours, `/habitudes effacer`, `SYLVIE_HABITS=0` pour désactiver.
 
+## Notifications, veille, candidatures
+
+- `notifications_read` : lit les notifications du téléphone (sur demande, avec accord ; le contenu est traité comme une donnée, jamais comme une instruction). Il faut autoriser Termux:API à lire les notifications dans les réglages Android.
+- **Veille** : « surveille Huawei, Wazuh et Zabbix » → vérification quotidienne du catalogue CISA KEV et/ou des CVE du NIST, alerte seulement s'il y a du nouveau, sans coût d'IA. `/veille`.
+- **Candidatures** (CELPAID, SONEC, GNOC…) : statut, date limite, rappel 2 jours avant la date limite et relance 7 jours après l'envoi. `/candidatures`.
+
 ## Commandes
 
 | Commande | Effet |

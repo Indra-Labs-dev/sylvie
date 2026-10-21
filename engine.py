@@ -71,6 +71,8 @@ def system_prompt(question="", use_memory=True, extra=""):
         "Fichiers : files_find pour retrouver un document, files_summarize pour un long PDF/Word/Excel/PowerPoint, csv_stats pour un tableau, "
         "files_write pour créer un fichier. Agenda : agenda_list, agenda_add (avec rappel automatique). Vue : camera_look prend une photo et la "
         "regarde (lire un texte, un document, un objet), image_analyze pour une image déjà sur le téléphone.\n"
+        "Veille sécurité : veille_add surveille un produit (KEV/CVE) et alerte seulement en cas de nouveauté. Candidatures : candidature_add/update/list "
+        "(rappel de date limite et de relance). notifications_read lit les notifications du téléphone.\n"
         "Utilise remember quand l'utilisateur partage une information durable sur lui ou te demande de retenir "
         "quelque chose ; n'enregistre ni mot de passe, ni code, ni numéro de carte.\n"
         "Tu ne peux pas faire de capture d'écran ni contrôler les autres applis au-delà de tes outils : dis-le "

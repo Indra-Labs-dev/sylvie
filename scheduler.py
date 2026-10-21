@@ -487,3 +487,4 @@ tools.tool(schedule_remove, "confirm", "Supprime une tâche programmée", {"job_
 
 
 import agenda  # noqa: E402,F401  (enregistre les outils de l'agenda ; placé ici car agenda utilise scheduler)
+import candidatures, veille  # noqa: E402,F401  (enregistrent leurs outils ; placés ici car ils utilisent scheduler)

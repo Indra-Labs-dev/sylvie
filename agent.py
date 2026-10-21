@@ -25,6 +25,8 @@ HELP = [
     ("/briefing HH:MM", "briefing du matin chaque jour à cette heure"),
     ("/attente", "actions que des tâches automatiques attendent de toi"),
     ("/agenda [jours]", "événements à venir de l'agenda de Sylvie"),
+    ("/veille", "veilles sécurité en cours (pour en ajouter : « surveille Huawei »)"),
+    ("/candidatures", "suivi des candidatures"),
     ("/regles", "règles permanentes : autoriser d'avance un genre d'action (voir « /regles aide »)"),
     ("/habitudes", "demandes que tu répètes ; « /habitudes effacer » supprime l'historique"),
     ("/diagnostic", "vérifie permissions, outils, clés, réseau et dit quoi corriger"),
@@ -180,6 +182,13 @@ def command(q, contents):
             ui.info(evs)
         for e in evs if isinstance(evs, list) else []:
             ui.out(f"  {ui.violet(str(e['id']).rjust(3))}  {e['quand']}  {e['titre']}" + (ui.dim(f" · {e['lieu']}") if e.get("lieu") else ""))
+    elif cmd in ("/veille", "/candidatures"):
+        import candidatures, veille
+        res = veille.veille_list() if cmd == "/veille" else candidatures.candidature_list()
+        if isinstance(res, str):
+            ui.info(res)
+        for r in [] if isinstance(res, str) else res:
+            ui.out("  " + ui.violet(str(r["id"]).rjust(3)) + "  " + "  ".join(f"{v}" for k, v in r.items() if k != "id" and v))
     elif cmd == "/regles":
         rules_cmd(arg.split())
     elif cmd == "/habitudes":
