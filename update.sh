@@ -26,16 +26,17 @@ if [ "$SYLVIE_SKIP_TESTS" = "1" ]; then
     echo "OK, mis à jour (tests ignorés)."
     exit 0
 fi
+LOG="$(pwd)/.update-tests.log"   # pas /tmp : non inscriptible sous Termux
 echo "→ Vérification (tests)..."
-if python -B -m unittest discover -s tests >/tmp/sylvie-tests.log 2>&1; then
-    echo "OK, mis à jour : $(tail -n 3 /tmp/sylvie-tests.log | head -n 1)"
+if python -B -m unittest discover -s tests >"$LOG" 2>&1; then
+    echo "OK, mis à jour : $(tail -n 3 "$LOG" | head -n 1)"
 else
     echo "✖ Les tests échouent sur ce téléphone :"
-    grep -E "^(FAIL|ERROR):" /tmp/sylvie-tests.log | head -n 8
+    grep -E "^(FAIL|ERROR):" "$LOG" | head -n 8
     read -p "Revenir à la version précédente ? (O/n) " b
     if [ "$b" != "n" ]; then
         git reset -q --hard "$OLD"
-        echo "Retour à la version précédente. Détail : /tmp/sylvie-tests.log"
+        echo "Retour à la version précédente. Détail : "$LOG""
     else
         echo "Mise à jour gardée malgré les échecs."
     fi

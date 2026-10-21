@@ -10,3 +10,4 @@ apis.local.json
 .token
 .capture*
 serve.log
+.update-tests.log
