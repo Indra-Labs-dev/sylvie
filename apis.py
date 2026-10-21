@@ -392,14 +392,15 @@ def _fetch(e, url, query, body, form):
     except requests.exceptions.RequestException as ex:
         raise ApiError(f"{e['name']} : réseau ({ex.__class__.__name__})")
     host = urlparse(r.url).hostname or ""
-    if not e.get("any_redirect") and not re.match(e["_host_re"], host):  # redirection hors de l'hôte prévu
+    extra = any(host == d or host.endswith("." + d) for d in e.get("redirect_hosts", []))
+    if not e.get("any_redirect") and not extra and not re.match(e["_host_re"], host):  # redirection hors de l'hôte prévu
         r.close()
         raise ApiError(f"{e['name']} : redirection vers {host} refusée")
     chunks, size = [], 0
     for c in r.iter_content(65536):
         chunks.append(c)
         size += len(c)
-        if size > MAX_BYTES:
+        if size > e.get("max_bytes", MAX_BYTES):
             break
     r.close()
     text = b"".join(chunks).decode("utf-8", "replace")

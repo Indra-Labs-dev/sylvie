@@ -298,20 +298,21 @@
     "quelle",
     "heure"
    ],
-   "source": "catalogue:Timezone WorldTime",
-   "url": "https://worldtimeapi.org/api/timezone/{zone}",
+   "source": "catalogue:TimeAPI.io",
+   "url": "https://timeapi.io/api/time/current/zone",
    "params": {
     "zone": {
      "type": "string",
      "desc": "fuseau IANA",
-     "pattern": "^[A-Za-z_]+(/[A-Za-z_\\-]+){0,2}$"
+     "pattern": "^[A-Za-z_]+(/[A-Za-z_\\-]+){0,2}$",
+     "query_name": "timeZone"
     }
    },
    "extract": [
-    "datetime",
-    "timezone",
-    "utc_offset",
-    "abbreviation"
+    "dateTime",
+    "timeZone",
+    "dayOfWeek",
+    "dstActive"
    ],
    "example": {
     "zone": "Europe/Paris"
@@ -384,7 +385,10 @@
    "post": {
     "limit": 2
    },
-   "taints": false
+   "taints": false,
+   "redirect_hosts": [
+    "restcountries.com"
+   ]
   },
   {
    "name": "nominatim_recherche",
@@ -527,7 +531,10 @@
     "data": "[out:json][timeout:20];nwr(around:{radius},{latitude},{longitude})[amenity={type}];out center 12;"
    },
    "timeout": 30,
-   "taints": true
+   "taints": true,
+   "headers": {
+    "Accept": "*/*"
+   }
   },
   {
    "name": "change_ecb",
@@ -1363,8 +1370,9 @@
    "example": {
     "query": "Abidjan sourcecountry:IV"
    },
-   "min_interval": 5.5,
-   "taints": true
+   "min_interval": 7,
+   "taints": true,
+   "cache_seconds": 600
   },
   {
    "name": "emplois_arbeitnow",
@@ -1561,7 +1569,8 @@
    },
    "cache_seconds": 3600,
    "timeout": 40,
-   "taints": true
+   "taints": true,
+   "max_bytes": 8000000
   },
   {
    "name": "epss",
